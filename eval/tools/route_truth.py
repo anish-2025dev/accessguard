@@ -56,12 +56,24 @@ def docker_run_cmd(image: str, target: str, repo: dict[str, Any]) -> list[str]:
     return ["docker", "run", *RUN_FLAGS, *extra, image, target]
 
 
+def _deps_dir(src: Path, target: str) -> str:
+    """Nearest ancestor of the app file that declares dependencies (repo root by default)."""
+    if ":" not in target:
+        return "."
+    d = (src / target.rsplit(":", 1)[0]).parent
+    while d != src and d.is_relative_to(src):
+        if any((d / f).exists() for f in ("pyproject.toml", "requirements.txt", "setup.py")):
+            return str(d.relative_to(src))
+        d = d.parent
+    return "."
+
+
 def truth_for(repo: dict[str, Any], ca_bundle: Path | None = None) -> dict[str, object]:
     src = CHECKOUTS / repo["name"]
     if not src.is_dir():
         raise SystemExit(f"{src} missing; run eval/tools/fetch_corpus.py first")
     target = repo.get("app", "auto")
-    app_dir = str(Path(target.split(":")[0]).parts[0]) if ":" in target else "."
+    app_dir = repo.get("deps_dir") or _deps_dir(src, target)
     image = f"accessguard-routes-{repo['name'].lower()}"
     with tempfile.TemporaryDirectory() as ctx:
         ignore = shutil.ignore_patterns(".git")

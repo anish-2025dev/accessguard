@@ -11,7 +11,7 @@ from authgraph.guards.config import CONFIG_FILE, Config, parse_config
 from authgraph.lang.python.resolver import ProjectIndex
 from authgraph.lang.python.summarizer import module_name_for, summarize
 from authgraph.lang.python.summary import FileSummary
-from authgraph.workspace.tree import MAX_FILE_BYTES, SourceTree, matches_any
+from authgraph.workspace.tree import MAX_FILE_BYTES, SourceTree, is_test_path, matches_any
 
 
 @dataclass
@@ -32,7 +32,7 @@ def summarize_tree(
     cov = Coverage()
     out: dict[str, FileSummary] = {}
     for path in tree.paths():
-        if not path.endswith(".py") or (exclude and matches_any(path, exclude)):
+        if not path.endswith(".py") or is_test_path(path) or matches_any(path, exclude or []):
             continue
         cov.files_total += 1
         sha = tree.blob_sha(path)

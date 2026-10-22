@@ -127,6 +127,7 @@ class FastAPIGraph:
         self.config = config
         self.nodes: dict[NodeKey, Node] = {}
         self._closure_cache: dict[tuple[str, str, str], Closure] = {}
+        self._call_sites: dict[tuple[str, str], list[tuple[Value, str, str]]] | None = None
         self._build_nodes()
         self._attach()
 
@@ -187,7 +188,41 @@ class FastAPIGraph:
             return None
         if t.kind == "instance_attr" and t.name.endswith(".router"):  # app.router.include_router
             return self.node_of(Target("assign", t.path, t.name[: -len(".router")], t.scope))
+        if t.kind == "param":  # create_application(router=router): bind to the call sites' args
+            for v, path, scope in self._param_args(t):
+                key = self._value_node(v, path, scope, depth + 1)
+                if key:
+                    return key
         return None
+
+    def call_sites(self) -> dict[tuple[str, str], list[tuple[Value, str, str]]]:
+        """Calls of local functions from assignments: (callee path, qualname) -> call values."""
+        if self._call_sites is None:
+            self._call_sites = {}
+            for path, s in self.ix.files.items():
+                for a in s.assigns:
+                    if a.value.kind == "call" and a.value.dotted:
+                        t = self.ix.resolve(path, a.scope, a.value.dotted)
+                        if t.kind == "function":
+                            self._call_sites.setdefault((t.path, t.name), []).append(
+                                (a.value, path, a.scope)
+                            )
+        return self._call_sites
+
+    def _param_args(self, t: Target) -> list[tuple[Value, str, str]]:
+        fn = self.ix.function(Target("function", t.path, t.scope))
+        if fn is None:
+            return []
+        names = [p.name for p in fn.params]
+        idx = names.index(t.name)
+        if names and names[0] in ("self", "cls"):
+            idx -= 1
+        out = []
+        for call, path, scope in self.call_sites().get((t.path, t.scope), []):
+            v = call.kwargs.get(t.name) or (call.args[idx] if 0 <= idx < len(call.args) else None)
+            if v is not None:
+                out.append((v, path, scope))
+        return out
 
     def _factory_node(self, t: Target, depth: int) -> NodeKey | None:
         fn = self.ix.function(t)
@@ -341,13 +376,13 @@ class FastAPIGraph:
                         )
                     )
 
-    def _value_node(self, v: Value | None, path: str, scope: str) -> NodeKey | None:
-        if v is None:
+    def _value_node(self, v: Value | None, path: str, scope: str, depth: int = 0) -> NodeKey | None:
+        if v is None or depth > 6:
             return None
         if v.kind == "name" and v.dotted:
-            return self._receiver(path, scope, v.dotted)
+            return self.node_of(self.ix.resolve(path, scope, v.dotted), depth)
         if v.kind == "call" and v.dotted:  # include_router(make_router())
-            return self._factory_node(self.ix.resolve(path, scope, v.dotted), 0)
+            return self._factory_node(self.ix.resolve(path, scope, v.dotted), depth)
         return None
 
     # --- dependency closure ----------------------------------------------------------------
@@ -502,7 +537,7 @@ class FastAPIGraph:
                         if bt.kind == "external":
                             return self._target_closure(bt, a.value, depth)
                     return Closure()
-                if callee.kind == "function":
+                if callee.kind in ("function", "instance_attr"):
                     return self._target_closure(callee, a.value, depth)
             name = t.name
             return Closure(unresolved=[name] if AUTHISH_EXTERNAL.search(name) else [])
@@ -554,7 +589,7 @@ class FastAPIGraph:
     ) -> None:
         if depth > 32:
             return
-        here = _join(prefix, node.prefix) if (prefix or node.prefix) else ""
+        here = _join(prefix, node.prefix) if (prefix or node.prefix != "") else ""
         for r in node.routes:
             for m in r.methods:
                 ep = self._endpoint(
@@ -568,7 +603,7 @@ class FastAPIGraph:
             if child is not None:
                 self._walk(
                     child,
-                    _join(here, inc.prefix) if (here or inc.prefix) else "",
+                    _join(here, inc.prefix) if (here or inc.prefix != "") else "",
                     [*deps, *child.deps, *inc.deps],
                     [*chain, inc.loc],
                     out,

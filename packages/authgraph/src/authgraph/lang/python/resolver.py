@@ -10,7 +10,7 @@ from typing import Literal
 from authgraph.lang.python.summary import Assign, ClassInfo, FileSummary, Function, Value
 
 TargetKind = Literal[
-    "module", "function", "class", "assign", "instance_attr", "external", "unresolved"
+    "module", "function", "class", "assign", "instance_attr", "external", "param", "unresolved"
 ]
 MAX_DEPTH = 24
 
@@ -113,6 +113,9 @@ class ProjectIndex:
             for imp in reversed(s.imports):
                 if imp.scope == sc and imp.asname == name:
                     return self._from_import(path, imp.module, imp.name, imp.level, depth)
+            fn = s.functions.get(sc) if sc else None
+            if fn is not None and any(p.name == name for p in fn.params):
+                return Target("param", path, name, sc)
             for imp in s.imports:
                 if imp.scope == sc and imp.name == "*":
                     mod = self.module_path(path, imp.module, imp.level)

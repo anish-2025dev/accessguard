@@ -21,6 +21,21 @@ def blob_sha(data: bytes) -> str:
     return hashlib.sha1(b"blob %d\0" % len(data) + data, usedforsecurity=False).hexdigest()
 
 
+TEST_DIRS = frozenset({"tests", "test", "testing", "__tests__"})
+
+
+def is_test_path(path: str) -> bool:
+    """Test code never ships routes, so it never produces findings (default exclusion)."""
+    parts = path.split("/")
+    name = parts[-1]
+    return (
+        bool(TEST_DIRS & set(parts[:-1]))
+        or name.startswith("test_")
+        or name in {"conftest.py"}
+        or name.endswith("_test.py")
+    )
+
+
 def matches_any(path: str, patterns: Iterable[str]) -> bool:
     return any(
         fnmatch.fnmatch(path, p) or PurePosixPath(path).match(p) or path.startswith(p.rstrip("*"))
