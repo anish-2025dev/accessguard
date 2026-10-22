@@ -84,6 +84,7 @@ class Function(BaseModel):
     calls: list[str] = Field(default_factory=list)  # dotted callees (helpers that may raise)
     returns_none: bool = False
     return_names: list[str] = Field(default_factory=list)  # `return app` / `return checker`
+    return_calls: list[str] = Field(default_factory=list)  # `return make_router(...)` callees
     reads_authorization: bool = False
     token_decode: bool = False
     role_refs: list[str] = Field(default_factory=list)

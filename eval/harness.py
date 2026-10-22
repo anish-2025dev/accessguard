@@ -6,6 +6,8 @@ recall, the pure-move finding count, and (optionally) a regression check against
     python eval/harness.py                          # run, write eval/reports/report.{json,md}
     python eval/harness.py --baseline main.json     # also fail if any rule regressed vs baseline
     python eval/harness.py --enforce-gates          # also fail if eval/gates.yaml thresholds miss
+    python eval/harness.py --routes                 # also route recall vs sandbox ground truth
+                                                    # (needs eval/corpus/checkouts; see Makefile)
 """
 
 from __future__ import annotations
@@ -110,6 +112,41 @@ def evaluate(cases: list[Case]) -> dict[str, Any]:
     }
 
 
+def route_recall(truth_dir: Path = EVAL_DIR / "corpus" / "truth") -> dict[str, Any]:
+    """Static routes vs the runtime route table dumped in the sandbox (PLAN.md §7 layer 1)."""
+    from authgraph.engine import analyze
+    from authgraph.facts.models import Verdict
+    from authgraph.workspace.tree import DirectoryTree
+
+    repos: dict[str, Any] = {}
+    hit = total = unknown = endpoints = 0
+    for tf in sorted(truth_dir.glob("*.json")):
+        data = json.loads(tf.read_text(encoding="utf-8"))
+        truth = {
+            (r["method"], r["path"]) for r in data.get("routes", []) if r["kind"] == "APIRoute"
+        }
+        checkout = EVAL_DIR / "corpus" / "checkouts" / tf.stem
+        if not truth or not checkout.is_dir():
+            continue
+        facts = analyze(DirectoryTree(checkout)).facts
+        got = {(e.method, e.path) for e in facts.endpoints}
+        n_unknown = sum(e.authn == Verdict.UNKNOWN for e in facts.endpoints)
+        repos[tf.stem] = {
+            "truth": len(truth),
+            "found": len(truth & got),
+            "recall": len(truth & got) / len(truth),
+            "missing": sorted(f"{m} {p}" for m, p in truth - got)[:20],
+            "unknown_rate": n_unknown / len(facts.endpoints) if facts.endpoints else 0.0,
+        }
+        hit, total = hit + len(truth & got), total + len(truth)
+        unknown, endpoints = unknown + n_unknown, endpoints + len(facts.endpoints)
+    return {
+        "repos": repos,
+        "recall": hit / total if total else None,
+        "unknown_rate": unknown / endpoints if endpoints else None,
+    }
+
+
 def _fmt(x: float | None) -> str:
     return "n/a" if x is None else f"{x:.0%}"
 
@@ -129,6 +166,21 @@ def to_markdown(report: dict[str, Any]) -> str:
             f"| {rule} | {r['tp']} | {r['fp']} | {r['fn']} | "
             f"{_fmt(r['precision'])} | {_fmt(r['recall'])} |"
         )
+    rr = report.get("route_recall")
+    if rr:
+        lines += [
+            "",
+            f"## Route recall vs sandbox ground truth: {_fmt(rr['recall'])} "
+            f"(UNKNOWN rate {_fmt(rr['unknown_rate'])})",
+            "",
+            "| Repo | Truth routes | Found | Recall | UNKNOWN rate |",
+            "|---|---|---|---|---|",
+        ]
+        for name, r in rr["repos"].items():
+            lines.append(
+                f"| {name} | {r['truth']} | {r['found']} | {_fmt(r['recall'])} | "
+                f"{_fmt(r['unknown_rate'])} |"
+            )
     failed = [c for c in report["cases"] if not c["ok"]]
     if failed:
         lines += ["", "## Failing cases", ""]
@@ -167,6 +219,9 @@ def gate_failures(report: dict[str, Any], gates: dict[str, Any]) -> list[str]:
             out.append(f"{rule} recall {_fmt(r['recall'])} < {_fmt(gates['min_recall'])}")
     if report["pure_move_findings"] > gates.get("max_pure_move_findings", 0):
         out.append(f"pure-move findings {report['pure_move_findings']} > 0")
+    rr = report.get("route_recall")
+    if rr and rr["recall"] is not None and rr["recall"] < gates.get("min_route_recall", 0):
+        out.append(f"route recall {_fmt(rr['recall'])} < {_fmt(gates['min_route_recall'])}")
     return out
 
 
@@ -175,9 +230,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=EVAL_DIR / "reports")
     ap.add_argument("--baseline", type=Path)
     ap.add_argument("--enforce-gates", action="store_true")
+    ap.add_argument("--routes", action="store_true", help="measure route recall (needs checkouts)")
     args = ap.parse_args(argv)
 
     report = evaluate(load_cases())
+    if args.routes:
+        report["route_recall"] = route_recall()
     args.out.mkdir(parents=True, exist_ok=True)
     (args.out / "report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     md = to_markdown(report)

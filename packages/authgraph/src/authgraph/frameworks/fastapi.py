@@ -27,6 +27,7 @@ from authgraph.guards.scoring import (
     AUTHISH_EXTERNAL,
     CONFIRMED,
     NON_GUARD_EXTERNAL,
+    auth_raises,
     builtin_external,
     classify,
 )
@@ -225,6 +226,10 @@ class FastAPIGraph:
         return out
 
     def _factory_node(self, t: Target, depth: int) -> NodeKey | None:
+        if depth > 8:
+            return None
+        if t.kind == "instance_attr":  # users.get_auth_router() where users = LocalClass(...)
+            t = self._method_of_instance(t) or t
         fn = self.ix.function(t)
         if fn is None:
             return None
@@ -233,7 +238,20 @@ class FastAPIGraph:
             key = self.node_of(inner, depth + 1)
             if key:
                 return key
+        for callee in fn.return_calls:  # return get_auth_router(...)
+            key = self._factory_node(self.ix.resolve(t.path, fn.qualname, callee), depth + 1)
+            if key:
+                return key
         return None
+
+    def _method_of_instance(self, t: Target) -> Target | None:
+        obj, _, attr = t.name.rpartition(".")
+        a = self.ix.assign(Target("assign", t.path, obj, t.scope))
+        if a is None or a.value.kind != "call" or not a.value.dotted:
+            return None
+        cls = self.ix.resolve(t.path, a.scope, a.value.dotted)
+        meth = Target("function", cls.path, f"{cls.name}.{attr}")
+        return meth if cls.kind == "class" and self.ix.function(meth) else None
 
     def _receiver(self, path: str, scope: str, dotted: str) -> NodeKey | None:
         return self.node_of(self.ix.resolve(path, scope, dotted))
@@ -539,6 +557,21 @@ class FastAPIGraph:
                     return Closure()
                 if callee.kind in ("function", "instance_attr"):
                     return self._target_closure(callee, a.value, depth)
+                info = builtin_external(a.value.dotted, a.value)  # param.current_user(...)
+                if info is not None:
+                    return Closure(
+                        guards=[
+                            self._guard(
+                                a.value.dotted,
+                                info.kind,
+                                info.confidence,
+                                "builtin",
+                                info.on_fail,
+                                None,
+                                None,
+                            )
+                        ]
+                    )
             name = t.name
             return Closure(unresolved=[name] if AUTHISH_EXTERNAL.search(name) else [])
         if t.kind == "instance_attr":
@@ -554,6 +587,15 @@ class FastAPIGraph:
                 meth = Target("function", cls.path, f"{cls.name}.{attr}")
                 if self.ix.function(meth):
                     return self._target_closure(meth, call, depth)
+            info = builtin_external(t.name, call)  # authenticator.current_user(active=True)
+            if info is not None:
+                return Closure(
+                    guards=[
+                        self._guard(
+                            t.name, info.kind, info.confidence, "builtin", info.on_fail, None, None
+                        )
+                    ]
+                )
             return Closure(unresolved=[t.name] if AUTHISH_EXTERNAL.search(t.name) else [])
         return Closure(unresolved=[t.name] if AUTHISH_EXTERNAL.search(t.name) else [])
 
@@ -670,13 +712,12 @@ class FastAPIGraph:
                 principals.add(pname)
         # Inline checks in the handler body count as guards too.
         info = classify(fn, [], False)
-        first_sink = min((s.line for s in fn.sinks), default=None)
+        # Reading the object and then checking it is the normal ownership pattern; only a
+        # write/delete that happens before the check is a bypass (``sink_before_check``).
+        first_write = min((s.line for s in fn.sinks if s.kind != "read"), default=None)
+        first_check = min((r.line for r in auth_raises(fn)), default=None)
         if info is not None and info.kind in ENFORCING_KINDS:
-            dominates = (
-                fn.first_check_line is None
-                or first_sink is None
-                or fn.first_check_line < first_sink
-            )
+            dominates = first_check is None or first_write is None or first_check < first_write
             guards.append(
                 GuardRef(
                     symbol=self.ix.qualified(r.handler),

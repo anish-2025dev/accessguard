@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from authgraph.facts.models import GuardKind, OnFail
-from authgraph.lang.python.summary import Function, Value
+from authgraph.lang.python.summary import Function, RaiseInfo, Value
 
 CONFIRMED = 0.7
 
@@ -49,7 +49,8 @@ AUTH_NAME = re.compile(
     re.I,
 )
 AUTHISH_EXTERNAL = re.compile(
-    r"(auth|user|token|login|permission|role|admin|current|verify|jwt|security|principal|guard)",
+    r"(auth|current_?user|token|login|permission|role|admin|verif|jwt|security|principal|"
+    r"guard|require|access|credential|api_?key|scope|superuser|logged_?in)",
     re.I,
 )
 
@@ -102,23 +103,46 @@ def _or(conds: list[str | None]) -> str | None:
     return json.dumps(parsed[0] if len(parsed) == 1 else ["or", *parsed])
 
 
+_OWNER_ATOM = re.compile(
+    r"\b(owner_id|user_id|owner|author_id|created_by\w*|account_id|tenant_id|org_id)\b"
+)
+_ROLE_ATOM = re.compile(
+    r"\b(role|roles|user_role|is_superuser|is_admin|is_staff|scopes|permissions|groups|admin|"
+    r"superuser)\b"
+)
+
+
+def auth_raises(fn: Function) -> list[RaiseInfo]:
+    """Raises that reject a caller: 401/403, or 400/404 guarded by an ownership/role predicate
+    (apps often answer "not yours" with 400 or 404 to avoid leaking existence)."""
+    out = []
+    for r in fn.raises:
+        if r.status in (401, 403) or (
+            r.status in (400, 404)
+            and r.condition
+            and (_OWNER_ATOM.search(r.condition) or _ROLE_ATOM.search(r.condition))
+        ):
+            out.append(r)
+    return out
+
+
 def classify(fn: Function, helpers: list[Function], uses_scheme: bool) -> GuardInfo | None:
     """Score one dependency function. ``helpers`` are local functions it calls (depth 1)."""
-    raises = [r for r in fn.raises if r.status in (401, 403)]
-    owner_404 = [r for r in fn.raises if r.status == 404 and fn.owner_compare]
+    raises = auth_raises(fn)
     helper_raise = any(r.status in (401, 403) for h in helpers for r in h.raises)
     token = fn.token_decode or any(h.token_decode for h in helpers)
     auth_feature = token or fn.reads_authorization or uses_scheme
     named = bool(AUTH_NAME.search(fn.name))
-    role = bool(fn.role_refs)
 
-    if raises or owner_404 or helper_raise:
+    if raises or helper_raise:
         statuses = {r.status for r in raises}
-        cond = _or([r.condition for r in [*raises, *owner_404]]) if raises or owner_404 else None
-        if 403 in statuses and role:
-            return GuardInfo(GuardKind.AUTHZ_ROLE, 0.9, "raise", cond)
-        if fn.owner_compare:
+        conds = " ".join(r.condition or "" for r in raises)
+        cond = _or([r.condition for r in raises]) if raises else None
+        if fn.owner_compare and _OWNER_ATOM.search(conds):
+            # Kind comes from the predicate, not the status code, so 400 -> 403 is no change.
             return GuardInfo(GuardKind.AUTHZ_OWNER, 0.85, "raise", cond)
+        if _ROLE_ATOM.search(conds) or (403 in statuses and fn.role_refs):
+            return GuardInfo(GuardKind.AUTHZ_ROLE, 0.9, "raise", cond)
         if 401 in statuses or auth_feature or helper_raise:
             conf = 0.9 if (auth_feature or named or helper_raise) else 0.75
             return GuardInfo(GuardKind.AUTHN, conf, "raise", cond)

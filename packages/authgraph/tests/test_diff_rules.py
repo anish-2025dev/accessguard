@@ -152,3 +152,18 @@ def test_rules_can_be_disabled_by_base_config(tmp_path: Path) -> None:
         )
         == []
     )
+
+
+def test_fastapi_users_superuser_to_active_is_a_downgrade(tmp_path: Path) -> None:
+    base = """
+from fastapi import FastAPI, Depends
+from fastapi_users import FastAPIUsers
+users = FastAPIUsers(get_user_manager, [backend])
+app = FastAPI()
+@app.delete("/admin/users/{uid}")
+def delete_user(uid: int, u=Depends(users.current_user(active=True, superuser=True))): ...
+"""
+    head = base.replace("active=True, superuser=True", "active=True")
+    assert _diff(tmp_path, {"main.py": base}, {"main.py": head}) == [
+        ("AG-AUTH-002", "DELETE /admin/users/{uid}")
+    ]

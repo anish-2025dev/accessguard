@@ -1,0 +1,15 @@
+{
+  "app": null,
+  "routes": [],
+  "errors": [
+    {
+      "app": "{{cookiecutter.project_slug}}/backend/app/main.py:app",
+      "error": "Traceback (most recent call last):\n  File \"/dump_routes.py\", line 132, in dump\n    app = load(root, cand)\n          ^^^^^^^^^^^^^^^^\n  File \"/dump_routes.py\", line 94, in load\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 999, in exec_module\nModuleNotFoundError: No module named 'sqlalchemy'\n"
+    }
+  ],
+  "candidates": [
+    "{{cookiecutter.project_slug}}/backend/app/main.py:app"
+  ],
+  "name": "fastapi-react",
+  "ref": "af17f2d422d0ebc5f173e83f2c6931045ab055b0"
+}

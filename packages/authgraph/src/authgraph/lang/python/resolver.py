@@ -101,7 +101,9 @@ class ProjectIndex:
         s = self.files.get(path)
         if s is None:
             return Target("unresolved", path, name)
-        for sc in self._scopes(scope):
+        for i, sc in enumerate(self._scopes(scope)):
+            if i > 0 and sc in s.classes:
+                continue  # class bodies are not enclosing scopes for their methods
             qual = f"{sc}.{name}" if sc else name
             if qual in s.functions:
                 return Target("function", path, qual)
@@ -155,6 +157,10 @@ class ProjectIndex:
             return Target("module", mod)
         mod = self.module_path(path, module, level)
         if mod is None:
+            # Namespace package (no __init__.py): `from svc.routes import views` -> submodule.
+            sub_mod = self.module_path(path, f"{module}.{name}" if module else name, level)
+            if sub_mod is not None:
+                return Target("module", sub_mod)
             if level == 0:
                 return Target("external", "", f"{module}.{name}")
             self.unresolved_imports += 1
@@ -173,9 +179,16 @@ class ProjectIndex:
                 inner = self._lookup(t.path, "", attr, depth + 1)
                 if inner.kind == "unresolved" and sub:
                     return Target("module", sub)
+                if inner.kind == "unresolved":  # namespace subpackage: keep walking by name
+                    return Target("external", "", f"{self.module_name(t.path)}.{attr}")
                 return inner
             return self._lookup(t.path, "", attr, depth + 1)
         if t.kind == "external":
+            local = self.module_path("", f"{t.name}.{attr}")  # `import ns.pkg` (namespace)
+            if local is not None and (
+                local.endswith(f"{attr}.py") or local.endswith(f"{attr}/__init__.py")
+            ):
+                return Target("module", local)
             return Target("external", "", f"{t.name}.{attr}")
         if t.kind == "class":
             s = self.files[t.path]

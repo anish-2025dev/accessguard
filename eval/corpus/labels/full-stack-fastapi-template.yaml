@@ -1,0 +1,4 @@
+# Hand labels for replay_history.py findings: fingerprint -> {label: tp|fp, note}.
+7131e41a3aa99e6dab4850dc908f88a005ef2f45206f95765b89fdc8b5d845e5:
+  label: tp
+  note: "14129f7a50 new local-only POST /private/users/ creates users without auth; gated only by ENVIRONMENT=local"

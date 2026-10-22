@@ -6,6 +6,7 @@ deterministic fact about the two graphs; rules decide which deltas become findin
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass, field
 
 from authgraph.diff.logic import weakened
@@ -95,7 +96,7 @@ def endpoint_deltas(b: Endpoint, h: Endpoint) -> list[Delta]:
                 )
             )
             continue
-        if hg is None or not enforcing(hg):
+        if hg is None or not enforcing(hg) or hg.kind != bg.kind:
             if not _covers(h, bg) and h.authn != Verdict.UNKNOWN:
                 out.append(Delta("guard_removed", h, b, bg, hg, f"{bg.symbol} ({bg.kind})"))
             continue
@@ -118,17 +119,22 @@ def endpoint_deltas(b: Endpoint, h: Endpoint) -> list[Delta]:
                 )
             )
     has_owner = any(g.kind == GuardKind.AUTHZ_OWNER and enforcing(g) for g in h.guards)
-    for bs in (s for s in b.sinks if s.principal_scoped):
-        hs = next((s for s in h.sinks if (s.kind, s.model) == (bs.kind, bs.model)), None)
-        if hs is not None and not hs.principal_scoped and not has_owner:
-            out.append(
-                Delta(
-                    "scope_removed",
-                    h,
-                    b,
-                    detail=f"{bs.model} lookup no longer filtered by the current user",
+    if not has_owner:
+        # Multiset compare: the same model may be queried scoped and unscoped (admin branch).
+        b_scoped = Counter((s.kind, s.model) for s in b.sinks if s.principal_scoped)
+        h_scoped = Counter((s.kind, s.model) for s in h.sinks if s.principal_scoped)
+        h_models = {(s.kind, s.model) for s in h.sinks}
+        for (kind, model), n in (b_scoped - h_scoped).items():
+            if (kind, model) in h_models:
+                out.append(
+                    Delta(
+                        "scope_removed",
+                        h,
+                        b,
+                        detail=f"{model} {kind} no longer "
+                        f"filtered by the current user ({n} lookup(s))",
+                    )
                 )
-            )
     new_fields = sorted(set(h.mass_assign_fields) - set(b.mass_assign_fields))
     if new_fields:
         out.append(Delta("mass_assign", h, b, detail=", ".join(new_fields), fields=new_fields))

@@ -93,6 +93,14 @@ def call_dotted(node: ast.AST) -> str | None:
     return dotted(node.func) if isinstance(node, ast.Call) else None
 
 
+def _callee(call: ast.Call) -> str | None:
+    """Callee name, seeing through generic subscripts: ``FastAPIUsers[User, ID](...)``."""
+    f = call.func
+    if isinstance(f, ast.Subscript):
+        f = f.value
+    return dotted(f)
+
+
 def to_value(node: ast.AST | None) -> Value | None:
     if node is None:
         return None
@@ -105,7 +113,7 @@ def to_value(node: ast.AST | None) -> Value | None:
     if isinstance(node, ast.Call):
         return Value(
             kind="call",
-            dotted=dotted(node.func),
+            dotted=_callee(node),
             args=[v for a in node.args if (v := to_value(a)) is not None],
             kwargs={
                 k.arg: v for k in node.keywords if k.arg and (v := to_value(k.value)) is not None
@@ -280,6 +288,8 @@ class _FunctionVisitor:
                 self.fn.returns_none = True
             elif isinstance(st.value, ast.Name):
                 self.fn.return_names.append(st.value.id)
+            elif isinstance(st.value, ast.Call) and (callee := _callee(st.value)):
+                self.fn.return_calls.append(callee)
         elif isinstance(st, ast.Match):
             for case in st.cases:
                 self._block(case.body, conds, in_except)

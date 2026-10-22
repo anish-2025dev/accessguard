@@ -130,3 +130,31 @@ def test_summary_cache_hits_by_blob(tmp_path: Path) -> None:
     assert cov.cache_hits == 1 and summaries["b/a.py"].module == "b.a"
     _, cov2 = summarize_tree(DirectoryTree(tmp_path), cache)
     assert cov2.cache_hits == 2
+
+
+def test_namespace_packages_resolve(tmp_path: Path) -> None:
+    write_tree(
+        tmp_path,
+        {
+            "svc/__init__.py": "",
+            "svc/routes/views.py": "router = 1\n",
+            "svc/main.py": "from svc.routes import views\nimport svc.routes.views\n",
+        },
+    )
+    summaries, _ = summarize_tree(DirectoryTree(tmp_path), MemoryCache())
+    ix = ProjectIndex(summaries)
+    assert ix.resolve("svc/main.py", "", "views.router").path == "svc/routes/views.py"
+    assert ix.resolve("svc/main.py", "", "svc.routes.views.router").path == "svc/routes/views.py"
+
+
+def test_method_scope_skips_class_body(tmp_path: Path) -> None:
+    write_tree(
+        tmp_path,
+        {
+            "lib.py": "def build(): ...\n",
+            "m.py": "from lib import build\nclass C:\n    def build(self):\n        return build()\n",
+        },
+    )
+    summaries, _ = summarize_tree(DirectoryTree(tmp_path), MemoryCache())
+    t = ProjectIndex(summaries).resolve("m.py", "C.build", "build")
+    assert (t.path, t.name) == ("lib.py", "build")
