@@ -25,6 +25,7 @@ dev = [
     "types-PyYAML>=6.0",
     "pre-commit>=4.0",
     "jsonschema>=4.23",
+    "types-jsonschema>=4.26.0.20261006",
 ]
 
 [tool.ruff]

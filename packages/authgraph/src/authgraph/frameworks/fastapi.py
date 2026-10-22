@@ -190,9 +190,9 @@ class FastAPIGraph:
             return self.node_of(Target("assign", t.path, t.name[: -len(".router")], t.scope))
         if t.kind == "param":  # create_application(router=router): bind to the call sites' args
             for v, path, scope in self._param_args(t):
-                key = self._value_node(v, path, scope, depth + 1)
-                if key:
-                    return key
+                bound = self._value_node(v, path, scope, depth + 1)
+                if bound:
+                    return bound
         return None
 
     def call_sites(self) -> dict[tuple[str, str], list[tuple[Value, str, str]]]:
