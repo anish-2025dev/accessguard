@@ -1,0 +1,136 @@
+"""Guard seeds and feature scoring (FR-7.6, rules only; LLM classification arrives in Phase 3).
+
+A dependency is a *guard* when it can stop a request: it raises 401/403 (directly or through a
+helper) or is a known security primitive. Kinds follow PLAN.md §6.2. Confidence below
+``CONFIRMED`` never makes an endpoint AUTH, so weak evidence yields UNKNOWN/NO_AUTH, not silence.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+from dataclasses import dataclass
+from typing import Any
+
+from authgraph.facts.models import GuardKind, OnFail
+from authgraph.lang.python.summary import Function, Value
+
+CONFIRMED = 0.7
+
+# fastapi.security classes, verified against fastapi 0.161.0 (`fastapi/security/__init__.py`):
+# each accepts `auto_error` (default True -> 401/403 when credentials are missing).
+FASTAPI_SECURITY = frozenset(
+    {
+        "APIKeyCookie",
+        "APIKeyHeader",
+        "APIKeyQuery",
+        "HTTPBasic",
+        "HTTPBearer",
+        "HTTPDigest",
+        "OAuth2",
+        "OAuth2AuthorizationCodeBearer",
+        "OAuth2PasswordBearer",
+        "OpenIdConnect",
+    }
+)
+# Request-parsing helpers from fastapi.security that never reject a request on their own.
+NON_GUARD_EXTERNAL = frozenset(
+    {
+        "OAuth2PasswordRequestForm",
+        "OAuth2PasswordRequestFormStrict",
+        "HTTPAuthorizationCredentials",
+        "HTTPBasicCredentials",
+        "SecurityScopes",
+    }
+)
+AUTH_NAME = re.compile(
+    r"(auth|current_?user|login|require|verify|permission|admin|role|token|guard|protect|"
+    r"owner|member|staff|superuser|access|principal|session|scope|jwt|api_?key|privilege)",
+    re.I,
+)
+AUTHISH_EXTERNAL = re.compile(
+    r"(auth|user|token|login|permission|role|admin|current|verify|jwt|security|principal|guard)",
+    re.I,
+)
+
+
+@dataclass
+class GuardInfo:
+    kind: GuardKind
+    confidence: float
+    on_fail: OnFail
+    condition: str | None = None  # JSON formula: the guard rejects when this holds
+
+
+def builtin_external(qualified: str, call: Value | None) -> GuardInfo | None:
+    """Known security primitives from libraries (seeds). ``call`` is the constructor/factory."""
+    last = qualified.split(".")[-1]
+    kwargs = call.kwargs if call else {}
+
+    def flag(name: str) -> bool:
+        v = kwargs.get(name)
+        return bool(v and v.kind == "const" and v.const is True)
+
+    if last in FASTAPI_SECURITY and (
+        qualified.startswith("fastapi.")
+        or qualified.startswith("starlette.")
+        or "." not in qualified
+    ):
+        auto = kwargs.get("auto_error")
+        if auto is not None and auto.kind == "const" and auto.const is False:
+            return GuardInfo(GuardKind.OPTIONAL_AUTHN, 1.0, "none")
+        return GuardInfo(GuardKind.AUTHN, 0.8, "raise")
+    # fastapi-users: FastAPIUsers.current_user(optional, active, verified, superuser)
+    # (fastapi_users/authentication/authenticator.py at the pinned corpus ref).
+    if last in {"current_user", "current_user_token"}:
+        if flag("optional"):
+            return GuardInfo(GuardKind.OPTIONAL_AUTHN, 1.0, "none")
+        if flag("superuser"):
+            return GuardInfo(GuardKind.AUTHZ_ROLE, 1.0, "raise")
+        return GuardInfo(GuardKind.AUTHN, 1.0, "raise")
+    return None
+
+
+def _or(conds: list[str | None]) -> str | None:
+    parsed: list[Any] = []
+    for c in conds:
+        if c is None:
+            return json.dumps(["atom", "True"])  # unconditional rejection on some path
+        parsed.append(json.loads(c))
+    if not parsed:
+        return None
+    return json.dumps(parsed[0] if len(parsed) == 1 else ["or", *parsed])
+
+
+def classify(fn: Function, helpers: list[Function], uses_scheme: bool) -> GuardInfo | None:
+    """Score one dependency function. ``helpers`` are local functions it calls (depth 1)."""
+    raises = [r for r in fn.raises if r.status in (401, 403)]
+    owner_404 = [r for r in fn.raises if r.status == 404 and fn.owner_compare]
+    helper_raise = any(r.status in (401, 403) for h in helpers for r in h.raises)
+    token = fn.token_decode or any(h.token_decode for h in helpers)
+    auth_feature = token or fn.reads_authorization or uses_scheme
+    named = bool(AUTH_NAME.search(fn.name))
+    role = bool(fn.role_refs)
+
+    if raises or owner_404 or helper_raise:
+        statuses = {r.status for r in raises}
+        cond = _or([r.condition for r in [*raises, *owner_404]]) if raises or owner_404 else None
+        if 403 in statuses and role:
+            return GuardInfo(GuardKind.AUTHZ_ROLE, 0.9, "raise", cond)
+        if fn.owner_compare:
+            return GuardInfo(GuardKind.AUTHZ_OWNER, 0.85, "raise", cond)
+        if 401 in statuses or auth_feature or helper_raise:
+            conf = 0.9 if (auth_feature or named or helper_raise) else 0.75
+            return GuardInfo(GuardKind.AUTHN, conf, "raise", cond)
+        if 403 in statuses:
+            return GuardInfo(GuardKind.AUTHZ_ROLE, 0.8 if named else 0.7, "raise", cond)
+    if token or (auth_feature and named):
+        swallowed = [e for e in fn.excepts if e.body in ("log_only", "pass")]
+        if swallowed:
+            # Looks like authentication but every failure path is swallowed (FR-3.5 neutered).
+            return GuardInfo(GuardKind.FAKE, 0.8, "log_only")
+        if fn.returns_none:
+            return GuardInfo(GuardKind.OPTIONAL_AUTHN, 0.8, "none")
+        if not any(r.status for r in fn.raises) and token:
+            return GuardInfo(GuardKind.FAKE, 0.7, "none")
+    return None

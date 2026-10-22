@@ -1,0 +1,727 @@
+"""FastAPI router graph, route enumeration and guard closure (FR-3.1, FR-3.2; PLAN.md §6.4).
+
+Static only: the graph is built from summaries (decorators, ``add_api_route``,
+``include_router`` prefixes/dependencies, ``mount``, cross-file imports). Anything we cannot
+fold to a constant becomes ``<dynamic>``; any auth-looking dependency we cannot resolve makes the
+verdict UNKNOWN instead of a guess.
+"""
+
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass, field
+
+from authgraph.facts.models import (
+    ENFORCING_KINDS,
+    Endpoint,
+    GuardKind,
+    GuardRef,
+    GuardSource,
+    Loc,
+    OnFail,
+    Sink,
+    Verdict,
+)
+from authgraph.guards.config import Config
+from authgraph.guards.scoring import (
+    AUTHISH_EXTERNAL,
+    CONFIRMED,
+    NON_GUARD_EXTERNAL,
+    builtin_external,
+    classify,
+)
+from authgraph.lang.python.resolver import ProjectIndex, Target
+from authgraph.lang.python.summary import Function, Value
+
+HTTP_METHODS = frozenset({"get", "post", "put", "patch", "delete", "options", "head", "trace"})
+APP_CLASSES = frozenset({"FastAPI"})
+ROUTER_CLASSES = frozenset({"APIRouter"})
+DEP_CALLS = frozenset({"Depends", "Security"})
+PRIVILEGED_FIELDS = frozenset(
+    {
+        "role",
+        "roles",
+        "user_role",
+        "is_admin",
+        "is_superuser",
+        "is_staff",
+        "permissions",
+        "scopes",
+        "groups",
+        "owner_id",
+        "user_id",
+        "author_id",
+        "tenant_id",
+        "org_id",
+        "organization_id",
+        "is_verified",
+    }
+)
+PRINCIPAL_NAME = re.compile(r"(user|principal|account|member|owner|^me$|subject|identity)", re.I)
+MAX_DEP_DEPTH = 8
+NodeKey = tuple[str, str, str]  # (path, scope, variable)
+
+
+@dataclass
+class DepUse:
+    value: Value  # the dependency expression (Depends arg) or a class for `Depends()`
+    path: str
+    scope: str
+    loc: Loc
+    inherited: bool = False
+
+
+@dataclass
+class RouteDecl:
+    methods: list[str]
+    path: str | None
+    handler: Target
+    deps: list[DepUse]
+    loc: Loc
+    file: str
+    scope: str
+
+
+@dataclass
+class Include:
+    child: NodeKey
+    prefix: str | None
+    deps: list[DepUse]
+    loc: Loc
+
+
+@dataclass
+class Mount:
+    child: NodeKey
+    path: str | None
+    loc: Loc
+
+
+@dataclass
+class Node:
+    key: NodeKey
+    kind: str  # "app" | "router"
+    prefix: str | None
+    deps: list[DepUse]
+    loc: Loc
+    routes: list[RouteDecl] = field(default_factory=list)
+    includes: list[Include] = field(default_factory=list)
+    mounts: list[Mount] = field(default_factory=list)
+
+
+@dataclass
+class Closure:
+    guards: list[GuardRef] = field(default_factory=list)
+    unresolved: list[str] = field(default_factory=list)
+
+
+def _join(*parts: str | None) -> str:
+    out = "".join(p if p is not None else "<dynamic>" for p in parts)
+    out = re.sub(r"/{2,}", "/", out)
+    return out if out.startswith("/") else "/" + out
+
+
+class FastAPIGraph:
+    def __init__(self, index: ProjectIndex, config: Config) -> None:
+        self.ix = index
+        self.config = config
+        self.nodes: dict[NodeKey, Node] = {}
+        self._closure_cache: dict[tuple[str, str, str], Closure] = {}
+        self._build_nodes()
+        self._attach()
+
+    # --- graph construction ----------------------------------------------------------------
+
+    def _loc(self, path: str, line: int) -> Loc:
+        s = self.ix.files.get(path)
+        return Loc(path=path, line=line, blob_sha=s.blob_sha if s else "")
+
+    def _class_kind(self, t: Target, depth: int = 0) -> str | None:
+        if depth > 4:
+            return None
+        if t.kind == "external":
+            last = t.name.split(".")[-1]
+            root = t.name.split(".")[0]
+            if root in {"fastapi", "starlette"} or "." not in t.name:
+                if last in APP_CLASSES:
+                    return "app"
+                if last in ROUTER_CLASSES:
+                    return "router"
+            return None
+        info = self.ix.klass(t)
+        if info is not None:
+            for b in info.bases:
+                k = self._class_kind(self.ix.resolve(t.path, "", b), depth + 1)
+                if k:
+                    return k
+        return None
+
+    def _build_nodes(self) -> None:
+        for path, s in self.ix.files.items():
+            for a in s.assigns:
+                if a.value.kind != "call" or not a.value.dotted:
+                    continue
+                kind = self._class_kind(self.ix.resolve(path, a.scope, a.value.dotted))
+                if kind is None:
+                    continue
+                key = (path, a.scope, a.target)
+                prefix_v = a.value.kwargs.get("prefix")
+                self.nodes[key] = Node(
+                    key=key,
+                    kind=kind,
+                    prefix=self.ix.eval_str(path, a.scope, prefix_v) if prefix_v else "",
+                    deps=self._dep_list(a.value.kwargs.get("dependencies"), path, a.scope, True),
+                    loc=self._loc(path, a.line),
+                )
+
+    def node_of(self, t: Target, depth: int = 0) -> NodeKey | None:
+        if depth > 6:
+            return None
+        if t.kind == "assign":
+            key = (t.path, t.scope, t.name)
+            if key in self.nodes:
+                return key
+            a = self.ix.assign(t)
+            if a and a.value.kind == "call" and a.value.dotted:  # router = make_router()
+                return self._factory_node(self.ix.resolve(t.path, a.scope, a.value.dotted), depth)
+            return None
+        if t.kind == "instance_attr" and t.name.endswith(".router"):  # app.router.include_router
+            return self.node_of(Target("assign", t.path, t.name[: -len(".router")], t.scope))
+        return None
+
+    def _factory_node(self, t: Target, depth: int) -> NodeKey | None:
+        fn = self.ix.function(t)
+        if fn is None:
+            return None
+        for name in fn.return_names:
+            inner = self.ix.resolve(t.path, fn.qualname, name)
+            key = self.node_of(inner, depth + 1)
+            if key:
+                return key
+        return None
+
+    def _receiver(self, path: str, scope: str, dotted: str) -> NodeKey | None:
+        return self.node_of(self.ix.resolve(path, scope, dotted))
+
+    def _dep_list(self, v: Value | None, path: str, scope: str, inherited: bool) -> list[DepUse]:
+        out: list[DepUse] = []
+        for item in v.items if v is not None and v.kind == "list" else []:
+            d = self._dep_from_call(item, path, scope, inherited)
+            if d:
+                out.append(d)
+        return out
+
+    def _dep_from_call(
+        self, v: Value, path: str, scope: str, inherited: bool, annotation: Value | None = None
+    ) -> DepUse | None:
+        if v.kind != "call" or not v.dotted or v.dotted.split(".")[-1] not in DEP_CALLS:
+            return None
+        target = v.args[0] if v.args else v.kwargs.get("dependency") or annotation
+        if target is None:
+            return None
+        return DepUse(target, path, scope, self._loc(path, v.line), inherited)
+
+    def param_deps(self, fn: Function, path: str) -> list[tuple[str, DepUse]]:
+        """(param name, dependency) for ``Depends`` defaults and ``Annotated[..., Depends()]``."""
+        out: list[tuple[str, DepUse]] = []
+        for p in fn.params:
+            if p.default is not None:
+                d = self._dep_from_call(p.default, path, fn.qualname, False, p.annotation)
+                if d:
+                    out.append((p.name, d))
+                    continue
+            for d in self._annotated_deps(p.annotation, path, fn.qualname, 0):
+                out.append((p.name, d))
+        return out
+
+    def _annotated_deps(self, ann: Value | None, path: str, scope: str, depth: int) -> list[DepUse]:
+        if ann is None or depth > 4:
+            return []
+        if ann.kind == "subscript" and (ann.dotted or "").split(".")[-1] == "Annotated":
+            base = ann.items[0] if ann.items else None
+            return [
+                d
+                for meta in ann.items[1:]
+                if (d := self._dep_from_call(meta, path, scope, False, base)) is not None
+            ]
+        if ann.kind == "name" and ann.dotted:  # type alias: CurrentUser = Annotated[...]
+            t = self.ix.resolve(path, scope, ann.dotted)
+            a = self.ix.assign(t)
+            if a is not None:
+                return self._annotated_deps(a.value, t.path, a.scope, depth + 1)
+        return []
+
+    def _attach(self) -> None:
+        for path, s in self.ix.files.items():
+            for fn in s.functions.values():
+                scope = fn.qualname.rpartition(".")[0]
+                for dec in fn.decorators:
+                    if dec.kind != "call" or not dec.dotted or "." not in dec.dotted:
+                        continue
+                    recv, _, meth = dec.dotted.rpartition(".")
+                    if meth not in HTTP_METHODS and meth != "api_route":
+                        continue
+                    key = self._receiver(path, scope, recv)
+                    if key is None:
+                        continue
+                    methods = [meth.upper()]
+                    if meth == "api_route":
+                        mv = dec.kwargs.get("methods")
+                        methods = (
+                            [str(i.const).upper() for i in mv.items if i.kind == "const"]
+                            if mv and mv.kind == "list"
+                            else ["GET"]
+                        )
+                    pv = dec.args[0] if dec.args else dec.kwargs.get("path")
+                    self.nodes[key].routes.append(
+                        RouteDecl(
+                            methods=methods,
+                            path=self.ix.eval_str(path, scope, pv) if pv else "",
+                            handler=Target("function", path, fn.qualname),
+                            deps=self._dep_list(dec.kwargs.get("dependencies"), path, scope, False),
+                            loc=self._loc(path, fn.line),
+                            file=path,
+                            scope=scope,
+                        )
+                    )
+            for mc in s.method_calls:
+                key = self._receiver(path, mc.scope, mc.receiver)
+                if key is None:
+                    continue
+                node = self.nodes[key]
+                loc = self._loc(path, mc.line)
+                if mc.method == "include_router":
+                    cv = mc.args[0] if mc.args else mc.kwargs.get("router")
+                    child = self._value_node(cv, path, mc.scope)
+                    if child:
+                        pv = mc.kwargs.get("prefix")
+                        node.includes.append(
+                            Include(
+                                child=child,
+                                prefix=self.ix.eval_str(path, mc.scope, pv) if pv else "",
+                                deps=self._dep_list(
+                                    mc.kwargs.get("dependencies"), path, mc.scope, True
+                                ),
+                                loc=loc,
+                            )
+                        )
+                elif mc.method == "mount":
+                    pv = mc.args[0] if mc.args else mc.kwargs.get("path")
+                    av = mc.args[1] if len(mc.args) > 1 else mc.kwargs.get("app")
+                    child = self._value_node(av, path, mc.scope)
+                    if child:
+                        node.mounts.append(
+                            Mount(child, self.ix.eval_str(path, mc.scope, pv) if pv else "", loc)
+                        )
+                elif mc.method == "add_api_route":
+                    pv = mc.args[0] if mc.args else mc.kwargs.get("path")
+                    ev = mc.args[1] if len(mc.args) > 1 else mc.kwargs.get("endpoint")
+                    if ev is None or ev.dotted is None:
+                        continue
+                    handler = self.ix.resolve(path, mc.scope, ev.dotted)
+                    if handler.kind != "function":
+                        continue
+                    mv = mc.kwargs.get("methods")
+                    methods = (
+                        [str(i.const).upper() for i in mv.items if i.kind == "const"]
+                        if mv and mv.kind == "list"
+                        else ["GET"]
+                    )
+                    node.routes.append(
+                        RouteDecl(
+                            methods=methods,
+                            path=self.ix.eval_str(path, mc.scope, pv) if pv else "",
+                            handler=handler,
+                            deps=self._dep_list(
+                                mc.kwargs.get("dependencies"), path, mc.scope, False
+                            ),
+                            loc=loc,
+                            file=path,
+                            scope=mc.scope,
+                        )
+                    )
+
+    def _value_node(self, v: Value | None, path: str, scope: str) -> NodeKey | None:
+        if v is None:
+            return None
+        if v.kind == "name" and v.dotted:
+            return self._receiver(path, scope, v.dotted)
+        if v.kind == "call" and v.dotted:  # include_router(make_router())
+            return self._factory_node(self.ix.resolve(path, scope, v.dotted), 0)
+        return None
+
+    # --- dependency closure ----------------------------------------------------------------
+
+    def closure(self, dep: DepUse, depth: int = 0) -> Closure:
+        key = (dep.path, dep.scope, repr(dep.value.model_dump(exclude={"line"})))
+        if key in self._closure_cache:
+            return self._closure_cache[key]
+        self._closure_cache[key] = Closure()  # cycle guard
+        out = self._closure(dep, depth)
+        self._closure_cache[key] = out
+        return out
+
+    def _guard(
+        self,
+        symbol: str,
+        info_kind: GuardKind,
+        conf: float,
+        source: GuardSource,
+        on_fail: OnFail,
+        cond: str | None,
+        loc: Loc | None,
+    ) -> GuardRef:
+        decl = self.config.guard_decl(symbol)
+        if decl is not None:
+            return GuardRef(
+                symbol=symbol,
+                kind=decl.kind,
+                source="config",
+                confidence=1.0,
+                on_fail="raise",
+                condition=cond,
+                loc=loc,
+            )
+        return GuardRef(
+            symbol=symbol,
+            kind=info_kind,
+            source=source,
+            confidence=conf,
+            on_fail=on_fail,
+            condition=cond,
+            loc=loc,
+        )
+
+    def _function_closure(self, t: Target, depth: int) -> Closure:
+        fn = self.ix.function(t)
+        out = Closure()
+        if fn is None:
+            return out
+        symbol = self.ix.qualified(t)
+        uses_scheme = False
+        for _, d in self.param_deps(fn, t.path):
+            sub = self.closure(d, depth + 1)
+            out.guards += sub.guards
+            out.unresolved += sub.unresolved
+            if any(g.source == "builtin" for g in sub.guards):
+                uses_scheme = True
+        helpers = [
+            h
+            for c in fn.calls
+            if (ht := self.ix.resolve(t.path, fn.qualname, c)).kind == "function"
+            and (h := self.ix.function(ht)) is not None
+            and h is not fn
+        ]
+        info = classify(fn, helpers, uses_scheme)
+        decl = self.config.guard_decl(symbol)
+        if info is not None or decl is not None:
+            out.guards.insert(
+                0,
+                self._guard(
+                    symbol,
+                    info.kind if info else GuardKind.AUTHN,
+                    info.confidence if info else 1.0,
+                    "scored",
+                    info.on_fail if info else "raise",
+                    info.condition if info else None,
+                    self._loc(t.path, fn.line),
+                ),
+            )
+        return out
+
+    def _closure(self, dep: DepUse, depth: int) -> Closure:
+        if depth > MAX_DEP_DEPTH:
+            return Closure(unresolved=["<depth limit>"])
+        v = dep.value
+        if v.kind == "call" and v.dotted:  # Depends(current_user(active=True)) / Depends(Cls(..))
+            callee = self.ix.resolve(dep.path, dep.scope, v.dotted)
+            return self._target_closure(callee, v, depth)
+        if v.kind == "name" and v.dotted:
+            return self._target_closure(self.ix.resolve(dep.path, dep.scope, v.dotted), None, depth)
+        if v.kind == "subscript" and v.dotted:  # Depends() on a generic class annotation
+            return self._target_closure(self.ix.resolve(dep.path, dep.scope, v.dotted), None, depth)
+        return Closure(unresolved=["<expression>"])
+
+    def _target_closure(self, t: Target, call: Value | None, depth: int) -> Closure:
+        if t.kind == "external":
+            info = builtin_external(t.name, call)
+            if info is not None:
+                return Closure(
+                    guards=[
+                        self._guard(
+                            t.name, info.kind, info.confidence, "builtin", info.on_fail, None, None
+                        )
+                    ]
+                )
+            decl = self.config.guard_decl(t.name)
+            if decl is not None:
+                return Closure(
+                    guards=[self._guard(t.name, decl.kind, 1.0, "config", "raise", None, None)]
+                )
+            if t.name.rsplit(".", 1)[-1] in NON_GUARD_EXTERNAL:
+                return Closure()
+            return Closure(unresolved=[t.name] if AUTHISH_EXTERNAL.search(t.name) else [])
+        if t.kind == "function":
+            fn = self.ix.function(t)
+            if call is not None and fn is not None and fn.return_names:
+                # dependency factory: def require_role(r): def checker(...): ...; return checker
+                for name in fn.return_names:
+                    inner = Target("function", t.path, f"{fn.qualname}.{name}")
+                    if self.ix.function(inner) is not None:
+                        c = self._function_closure(inner, depth)
+                        outer = self._function_closure(t, depth)
+                        return Closure(c.guards + outer.guards, c.unresolved + outer.unresolved)
+            return self._function_closure(t, depth)
+        if t.kind == "class":
+            cinfo = self.ix.klass(t)
+            init = Target("function", t.path, f"{t.name}.__init__")
+            call_m = Target("function", t.path, f"{t.name}.__call__")
+            if call is not None and self.ix.function(call_m):  # Depends(RoleChecker([...]))
+                return self._function_closure(call_m, depth)
+            if self.ix.function(init):
+                return self._function_closure(init, depth)
+            if cinfo is not None:  # dataclass / pydantic model dependency: no guard
+                for b in cinfo.bases:
+                    bt = self.ix.resolve(t.path, "", b)
+                    if bt.kind == "external" and builtin_external(bt.name, call):
+                        return self._target_closure(bt, call, depth)
+            return Closure()
+        if t.kind == "assign":
+            a = self.ix.assign(t)
+            if a is not None and a.value.kind == "call" and a.value.dotted:
+                callee = self.ix.resolve(t.path, a.scope, a.value.dotted)
+                if callee.kind == "external":
+                    return self._target_closure(callee, a.value, depth)
+                if callee.kind == "class":
+                    call_m = Target("function", callee.path, f"{callee.name}.__call__")
+                    if self.ix.function(call_m):
+                        return self._function_closure(call_m, depth)
+                    cls_info = self.ix.klass(callee)
+                    for b in cls_info.bases if cls_info else []:
+                        bt = self.ix.resolve(callee.path, "", b)
+                        if bt.kind == "external":
+                            return self._target_closure(bt, a.value, depth)
+                    return Closure()
+                if callee.kind == "function":
+                    return self._target_closure(callee, a.value, depth)
+            name = t.name
+            return Closure(unresolved=[name] if AUTHISH_EXTERNAL.search(name) else [])
+        if t.kind == "instance_attr":
+            # fastapi_users.current_user(...) where fastapi_users = FastAPIUsers(...)
+            obj, _, attr = t.name.rpartition(".")
+            base = self.ix.assign(Target("assign", t.path, obj, t.scope))
+            if base is not None and base.value.dotted:
+                cls = self.ix.resolve(t.path, base.scope, base.value.dotted)
+                if cls.kind == "external":
+                    return self._target_closure(
+                        Target("external", "", f"{cls.name}.{attr}"), call, depth
+                    )
+                meth = Target("function", cls.path, f"{cls.name}.{attr}")
+                if self.ix.function(meth):
+                    return self._target_closure(meth, call, depth)
+            return Closure(unresolved=[t.name] if AUTHISH_EXTERNAL.search(t.name) else [])
+        return Closure(unresolved=[t.name] if AUTHISH_EXTERNAL.search(t.name) else [])
+
+    # --- enumeration -----------------------------------------------------------------------
+
+    def roots(self) -> list[Node]:
+        children = {i.child for n in self.nodes.values() for i in n.includes}
+        children |= {m.child for n in self.nodes.values() for m in n.mounts}
+        apps = [n for n in self.nodes.values() if n.kind == "app" and n.key not in children]
+        if apps:
+            return sorted(apps, key=lambda n: n.key)
+        return sorted(
+            (n for n in self.nodes.values() if n.key not in children), key=lambda n: n.key
+        )
+
+    def endpoints(self) -> list[Endpoint]:
+        out: list[Endpoint] = []
+        seen: set[str] = set()
+        for root in self.roots():
+            self._walk(root, "", list(root.deps), [], out, seen, False, 0)
+        return out
+
+    def _walk(
+        self,
+        node: Node,
+        prefix: str,
+        deps: list[DepUse],
+        chain: list[Loc],
+        out: list[Endpoint],
+        seen: set[str],
+        mounted_under_auth: bool,
+        depth: int,
+    ) -> None:
+        if depth > 32:
+            return
+        here = _join(prefix, node.prefix) if (prefix or node.prefix) else ""
+        for r in node.routes:
+            for m in r.methods:
+                ep = self._endpoint(
+                    r, m, _join(here, r.path), deps, chain, node, mounted_under_auth
+                )
+                if ep is not None and ep.id not in seen:
+                    seen.add(ep.id)
+                    out.append(ep)
+        for inc in node.includes:
+            child = self.nodes.get(inc.child)
+            if child is not None:
+                self._walk(
+                    child,
+                    _join(here, inc.prefix) if (here or inc.prefix) else "",
+                    [*deps, *child.deps, *inc.deps],
+                    [*chain, inc.loc],
+                    out,
+                    seen,
+                    mounted_under_auth,
+                    depth + 1,
+                )
+        for mnt in node.mounts:
+            child = self.nodes.get(mnt.child)
+            if child is None:
+                continue
+            parent_auth = any(self._enforcing(g) for d in deps for g in self.closure(d).guards)
+            # Mounted sub-apps do NOT inherit the parent's dependencies (PLAN.md §6.4).
+            self._walk(
+                child,
+                _join(here, mnt.path),
+                list(child.deps),
+                [*chain, mnt.loc],
+                out,
+                seen,
+                mounted_under_auth or parent_auth,
+                depth + 1,
+            )
+
+    @staticmethod
+    def _enforcing(g: GuardRef) -> bool:
+        return g.kind in ENFORCING_KINDS and g.confidence >= CONFIRMED
+
+    def _endpoint(
+        self,
+        r: RouteDecl,
+        method: str,
+        path: str,
+        inherited: list[DepUse],
+        chain: list[Loc],
+        node: Node,
+        mounted_under_auth: bool,
+    ) -> Endpoint | None:
+        fn = self.ix.function(r.handler)
+        if fn is None:
+            return None
+        guards: list[GuardRef] = []
+        unresolved: list[str] = []
+        principals: set[str] = set()
+        for d in [*inherited, *r.deps]:
+            c = self.closure(d)
+            for g in c.guards:
+                guards.append(
+                    g.model_copy(
+                        update={
+                            "inherited_from": d.loc if d.inherited else None,
+                            "dominates_sink": True,
+                        }
+                    )
+                )
+            unresolved += c.unresolved
+        for pname, d in self.param_deps(fn, r.file):
+            c = self.closure(d)
+            guards += [g.model_copy(update={"dominates_sink": True}) for g in c.guards]
+            unresolved += c.unresolved
+            if any(
+                g.kind in ENFORCING_KINDS or g.kind == GuardKind.OPTIONAL_AUTHN for g in c.guards
+            ) or PRINCIPAL_NAME.search(pname):
+                principals.add(pname)
+        # Inline checks in the handler body count as guards too.
+        info = classify(fn, [], False)
+        first_sink = min((s.line for s in fn.sinks), default=None)
+        if info is not None and info.kind in ENFORCING_KINDS:
+            dominates = (
+                fn.first_check_line is None
+                or first_sink is None
+                or fn.first_check_line < first_sink
+            )
+            guards.append(
+                GuardRef(
+                    symbol=self.ix.qualified(r.handler),
+                    kind=info.kind,
+                    source="scored",
+                    confidence=info.confidence,
+                    on_fail=info.on_fail,
+                    condition=info.condition,
+                    dominates_sink=dominates,
+                    loc=self._loc(r.file, fn.line),
+                )
+            )
+        guards = _dedupe(guards)
+        verdict = Verdict.NO_AUTH
+        if any(self._enforcing(g) for g in guards):
+            verdict = Verdict.AUTH
+        elif unresolved or "<dynamic>" in path:
+            verdict = Verdict.UNKNOWN
+        path_params = set(re.findall(r"{(\w+)(?::\w+)?}", path))
+        sinks = [
+            Sink(
+                kind=s.kind,
+                orm=s.orm,
+                model=s.model,
+                id_param=next((n for n in s.predicate_names if n in path_params), None),
+                principal_scoped=bool(principals & set(s.predicate_names)),
+                loc=self._loc(r.file, s.line),
+            )
+            for s in fn.sinks
+        ]
+        has_role = any(g.kind == GuardKind.AUTHZ_ROLE and self._enforcing(g) for g in guards)
+        mass = [] if has_role else self._mass_assigned(fn, r.file)
+        ep_id = f"{method} {path}"
+        sensitivity = set()
+        if method == "DELETE":
+            sensitivity.add("delete")
+        if method in {"POST", "PUT", "PATCH", "DELETE"}:
+            sensitivity.add("write")
+        if "admin" in path.lower():
+            sensitivity.add("admin_path")
+        if mass:
+            sensitivity.add("role_write")
+        public = self.config.is_public(ep_id) is not None
+        return Endpoint(
+            id=ep_id,
+            method=method,
+            path=path,
+            framework="fastapi",
+            handler=self.ix.qualified(r.handler),
+            loc=r.loc,
+            guards=guards,
+            authn=verdict,
+            sensitivity=sensitivity,
+            sinks=sinks,
+            public_by_config=public,
+            mounted_under_auth=mounted_under_auth,
+            chain=chain,
+            unresolved=sorted(set(unresolved)),
+            mass_assign_fields=mass,
+            router_group=f"{node.key[0]}:{node.key[2]}",
+        )
+
+    def _mass_assigned(self, fn: Function, path: str) -> list[str]:
+        fields: set[str] = set()
+        for ma in fn.mass_assign:
+            p = next((p for p in fn.params if p.name == ma.source), None)
+            if p is None or p.annotation is None or p.annotation.dotted is None:
+                continue
+            cls = self.ix.resolve(path, fn.qualname, p.annotation.dotted)
+            names = set(self.ix.class_fields(cls)) - set(ma.excluded)
+            fields |= names & PRIVILEGED_FIELDS
+        return sorted(fields)
+
+
+def _dedupe(guards: list[GuardRef]) -> list[GuardRef]:
+    seen: set[tuple[str, str]] = set()
+    out = []
+    for g in guards:
+        k = (g.symbol, g.kind)
+        if k not in seen:
+            seen.add(k)
+            out.append(g)
+    return out

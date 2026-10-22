@@ -24,6 +24,7 @@ dev = [
     "mypy>=1.13",
     "types-PyYAML>=6.0",
     "pre-commit>=4.0",
+    "jsonschema>=4.23",
 ]
 
 [tool.ruff]
@@ -48,6 +49,10 @@ warn_unused_configs = true
 [[tool.mypy.overrides]]
 module = ["authgraph.*"]
 strict = true
+
+[[tool.mypy.overrides]]
+module = ["z3"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["packages/authgraph/tests", "packages/app/tests", "eval/tests"]
