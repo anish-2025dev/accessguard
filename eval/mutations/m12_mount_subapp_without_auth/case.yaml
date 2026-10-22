@@ -1,0 +1,7 @@
+id: m12_mount_subapp_without_auth
+kind: positive
+framework: fastapi
+description: Mounts a sub-application; mounted apps do not inherit the parent app's dependencies.
+expected:
+  - rule_id: AG-AUTH-003
+    key: "POST /internal/reindex"

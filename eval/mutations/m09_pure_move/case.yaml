@@ -1,0 +1,5 @@
+id: m09_pure_move
+kind: move
+framework: fastapi
+description: Moves delete_user into its own module with identical guards; must produce zero findings.
+expected: []

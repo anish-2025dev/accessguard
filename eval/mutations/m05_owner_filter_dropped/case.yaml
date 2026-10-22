@@ -1,0 +1,7 @@
+id: m05_owner_filter_dropped
+kind: positive
+framework: fastapi
+description: Drops the owner_id predicate from an item lookup (IDOR regression).
+expected:
+  - rule_id: AG-AUTH-002
+    key: "GET /items/{item_id}"

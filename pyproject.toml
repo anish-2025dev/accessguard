@@ -1,0 +1,53 @@
+[project]
+name = "accessguard-workspace"
+version = "0.0.0"
+description = "AccessGuard monorepo root (not published)"
+requires-python = ">=3.12"
+dependencies = ["authgraph", "accessguard-app"]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/authgraph", "packages/app"]
+
+[tool.uv.sources]
+authgraph = { workspace = true }
+accessguard-app = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "hypothesis>=6.112",
+    "ruff>=0.7",
+    "mypy>=1.13",
+    "types-PyYAML>=6.0",
+    "pre-commit>=4.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["eval/mutations", "eval/corpus/checkouts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "S"]
+ignore = ["S101"]  # asserts are fine in tests
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S"]
+"eval/**" = ["S603", "S607"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = ["authgraph.*"]
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["packages/authgraph/tests", "packages/app/tests", "eval/tests"]
+asyncio_mode = "auto"
+addopts = "--import-mode=importlib"

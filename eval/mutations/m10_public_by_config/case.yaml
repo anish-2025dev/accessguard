@@ -1,0 +1,5 @@
+id: m10_public_by_config
+kind: negative
+framework: fastapi
+description: Adds GET /status, which the base-branch config already declares public.
+expected: []

@@ -1,0 +1,50 @@
+# Evaluation corpus, layers 1 and 2 (PLAN.md §7). Refs pinned 2026-10-23 via `git ls-remote`.
+# `app` is "<file>:<variable>" for the FastAPI application object; when omitted, route_truth.py
+# discovers candidates statically (assignments of FastAPI(...)) and tries each in the sandbox.
+# Fetch with: python eval/tools/fetch_corpus.py   (clones into eval/corpus/checkouts, gitignored)
+
+route_ground_truth:          # layer 1: FastAPI route recall
+  - name: full-stack-fastapi-template
+    url: https://github.com/fastapi/full-stack-fastapi-template
+    ref: b1125d8839482cb7bbae603ddc6d0081bf87532e
+    app: backend/app/main.py:app
+  - name: fastapi-realworld-example-app
+    url: https://github.com/nsidnev/fastapi-realworld-example-app
+    ref: 029eb7781c60d5f563ee8990a0cbfb79b244538c
+  - name: dispatch
+    url: https://github.com/Netflix/dispatch
+    ref: dd2837e82a0bf5565b1b4b4b91ea30b7262d4061
+  - name: mealie
+    url: https://github.com/mealie-recipes/mealie
+    ref: 7f099c91fb3da974b810c8d695b98a87d1573765
+  - name: lnbits
+    url: https://github.com/lnbits/lnbits
+    ref: 04b37f0d761222561bc8606cfe7edc86cabcce35
+  - name: polar
+    url: https://github.com/polarsource/polar
+    ref: ad44441b7edf346287a2eb4833aa0f1aebc992f9
+  - name: fastapi-alembic-sqlmodel-async
+    url: https://github.com/jonra1993/fastapi-alembic-sqlmodel-async
+    ref: 5101817accd747f206ca74b2c92f061ea69a5815
+  - name: fastapi-boilerplate
+    url: https://github.com/igorbenav/FastAPI-boilerplate
+    ref: 4deb9c45f4298d4a84f005126f6ee8ccd823acf8
+  - name: fastapi-react
+    url: https://github.com/Buuntu/fastapi-react
+    ref: af17f2d422d0ebc5f173e83f2c6931045ab055b0
+  - name: fastapi-users
+    url: https://github.com/fastapi-users/fastapi-users
+    ref: e9c57ff7ff2fd385bb0f6f795b524e9736b64290
+
+vulnerable_pairs:            # layer 2: must fire on vulnerable, stay quiet on secure
+  - name: vampi              # Flask/connexion, not FastAPI: used once a Flask adapter exists
+    url: https://github.com/erev0s/VAmPI
+    ref: f16052dce83f05847133ec98f01c5193a41de7d8
+  - name: crapi
+    url: https://github.com/OWASP/crAPI
+    ref: b5fc307f3e5f875809b095b771108ef342a33724
+
+express_ground_truth:        # layer 1 for Phase 3
+  - name: juice-shop
+    url: https://github.com/juice-shop/juice-shop
+    ref: 399fba76194305a312693eee44f4df64bdf0c3ce

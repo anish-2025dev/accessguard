@@ -1,0 +1,5 @@
+id: m02_new_route_under_auth_router
+kind: negative
+framework: fastapi
+description: Adds a route under the items router, which inherits get_current_user from include_router.
+expected: []

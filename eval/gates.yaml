@@ -1,0 +1,14 @@
+# Quality gates (PLAN.md §7). Enforced in CI with `python eval/harness.py --enforce-gates`
+# from Phase 1 onward; the regression gate (--baseline) is enforced from Phase 0.
+min_precision: 0.90          # deterministic-tier rules only
+min_recall: 0.95             # synthetic mutation recall, all rules
+max_pure_move_findings: 0
+deterministic_rules:
+  - AG-AUTH-001
+  - AG-AUTH-002
+  - AG-AUTH-003
+  - AG-ROLE-002
+  - AG-DATA-001
+  - AG-DATA-003
+  - AG-SECRET-001
+  - AG-CFG-001

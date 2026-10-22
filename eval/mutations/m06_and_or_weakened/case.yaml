@@ -1,0 +1,7 @@
+id: m06_and_or_weakened
+kind: positive
+framework: fastapi
+description: Flips `or` to `and` in require_admin, so any active user passes the admin check.
+expected:
+  - rule_id: AG-AUTH-002
+    key: "DELETE /admin/users/{user_id}"
