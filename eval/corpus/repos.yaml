@@ -1,6 +1,9 @@
 # Evaluation corpus, layers 1 and 2 (PLAN.md §7). Refs pinned 2026-10-23 via `git ls-remote`.
 # `app` is "<file>:<variable>" for the FastAPI application object; when omitted, route_truth.py
 # discovers candidates statically (assignments of FastAPI(...)) and tries each in the sandbox.
+# Optional per repo: `python` (sandbox interpreter, default 3.12), `env` (dummy settings needed
+# at import time; never real secrets), `workdir` (relative to the repo root),
+# `mkdirs` (directories the app asserts exist at import time).
 # Fetch with: python eval/tools/fetch_corpus.py   (clones into eval/corpus/checkouts, gitignored)
 
 route_ground_truth:          # layer 1: FastAPI route recall
@@ -8,6 +11,13 @@ route_ground_truth:          # layer 1: FastAPI route recall
     url: https://github.com/fastapi/full-stack-fastapi-template
     ref: b1125d8839482cb7bbae603ddc6d0081bf87532e
     app: backend/app/main.py:app
+    python: "3.14"
+    workdir: backend
+    mkdirs: [backend/app/frontend]
+    env: {SECRET_KEY: sandbox, PROJECT_NAME: sandbox, POSTGRES_SERVER: localhost, POSTGRES_USER: x,
+          POSTGRES_PASSWORD: x, POSTGRES_DB: x, FIRST_SUPERUSER: admin@example.com,
+          FIRST_SUPERUSER_PASSWORD: x, ENVIRONMENT: local,
+          DATABASE_URL: "postgresql://x:x@localhost/x"}
   - name: fastapi-realworld-example-app
     url: https://github.com/nsidnev/fastapi-realworld-example-app
     ref: 029eb7781c60d5f563ee8990a0cbfb79b244538c

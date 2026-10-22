@@ -39,6 +39,7 @@ ignore = ["S101"]  # asserts are fine in tests
 "**/tests/**" = ["S"]
 "eval/**" = ["S603", "S607"]
 "eval/tools/gen_mutations.py" = ["E501"]  # fixture source text
+"deploy/github-app/register.py" = ["E501"]  # inline HTML template and doc URLs
 
 [tool.mypy]
 python_version = "3.12"

@@ -17,6 +17,15 @@ A deterministic engine (`authgraph`) builds a fact graph of every route, the aut
 - Data: Supabase migrations (RLS, policies, grants), Firebase security rules
 - Delivery: GitHub check runs and PR review comments, plus a CLI (`authgraph scan`, `authgraph diff`)
 
+## Development
+```bash
+uv sync && uv run pre-commit install
+make check        # ruff, mypy --strict (authgraph), pytest
+make eval         # per-rule precision/recall on eval/ (synthetic mutations + corpus)
+```
+See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md) and [docs/privacy.md](docs/privacy.md).
+Licensed under Apache-2.0.
+
 ## Development with Claude Code
 This repo ships Claude Code configuration in `CLAUDE.md` and `.claude/`:
 - `CLAUDE.md`: project rules and commands, loaded every session
