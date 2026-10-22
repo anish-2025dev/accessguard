@@ -17,7 +17,9 @@ def fetch(name: str, url: str, ref: str, dest_root: Path) -> Path:
         dest.mkdir(parents=True, exist_ok=True)
         subprocess.run(["git", "init", "-q", str(dest)], check=True)
         subprocess.run(["git", "-C", str(dest), "remote", "add", "origin", url], check=True)
-    subprocess.run(["git", "-C", str(dest), "fetch", "-q", "--depth", "1", "origin", ref], check=True)
+    subprocess.run(
+        ["git", "-C", str(dest), "fetch", "-q", "--depth", "1", "origin", ref], check=True
+    )
     subprocess.run(["git", "-C", str(dest), "checkout", "-q", "--force", "FETCH_HEAD"], check=True)
     return dest
 

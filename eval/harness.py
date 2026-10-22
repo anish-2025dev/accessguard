@@ -19,7 +19,6 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-
 from authgraph.api import diff_paths
 
 EVAL_DIR = Path(__file__).resolve().parent
@@ -151,8 +150,10 @@ def regressions(report: dict[str, Any], baseline: dict[str, Any]) -> list[str]:
             if b is not None and (c is None or c < b - 1e-9):
                 out.append(f"{rule} {metric}: {_fmt(b)} -> {_fmt(c)}")
     if report["pure_move_findings"] > baseline.get("pure_move_findings", 0):
-        out.append(f"pure_move_findings: {baseline.get('pure_move_findings', 0)} -> "
-                   f"{report['pure_move_findings']}")
+        out.append(
+            f"pure_move_findings: {baseline.get('pure_move_findings', 0)} -> "
+            f"{report['pure_move_findings']}"
+        )
     return out
 
 

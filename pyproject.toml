@@ -29,7 +29,7 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-extend-exclude = ["eval/mutations", "eval/corpus/checkouts"]
+extend-exclude = ["eval/mutations", "eval/pairs", "eval/corpus/checkouts", "*.md"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "S"]
@@ -38,6 +38,7 @@ ignore = ["S101"]  # asserts are fine in tests
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = ["S"]
 "eval/**" = ["S603", "S607"]
+"eval/tools/gen_mutations.py" = ["E501"]  # fixture source text
 
 [tool.mypy]
 python_version = "3.12"
