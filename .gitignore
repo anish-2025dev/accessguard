@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+*.pem
+
+# Claude Code local (personal) settings
+.claude/settings.local.json
+
+# Eval outputs
+eval/reports/
+eval/.cache/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
