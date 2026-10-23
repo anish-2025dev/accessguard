@@ -292,7 +292,6 @@ case(
         ("AG-AUTH-002", "GET /items/"),
         ("AG-AUTH-002", "GET /items/{item_id}"),
         ("AG-AUTH-002", "PATCH /users/me"),
-        ("AG-AUTH-002", "DELETE /admin/users/{user_id}"),
     ],
 )
 

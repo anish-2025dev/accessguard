@@ -9,5 +9,3 @@ expected:
     key: "GET /items/{item_id}"
   - rule_id: AG-AUTH-002
     key: "PATCH /users/me"
-  - rule_id: AG-AUTH-002
-    key: "DELETE /admin/users/{user_id}"

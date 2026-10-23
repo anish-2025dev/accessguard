@@ -19,6 +19,12 @@ class APIRoute:
         self.path, self.methods = path, methods
 
 
+class Route:
+    def __init__(self, path: str, methods: set[str]) -> None:
+        self.path = path
+        self.methods = methods | {"HEAD"} if "GET" in methods else methods
+
+
 class Mount:
     def __init__(self, path: str, routes: list[Any]) -> None:
         self.path, self.routes = path, routes
@@ -40,13 +46,22 @@ class _IncludedRouter:
 def test_walk_flat_mount_and_lazy_include() -> None:
     routes = [
         APIRoute("/a", {"GET", "HEAD"}),
+        Route("/starlette", {"GET"}),
+        Route("/head-only", {"HEAD"}),
         Mount("/sub", [APIRoute("/x", {"POST"})]),
         _IncludedRouter(
             [_EffectiveRouteContext("/p/y", APIRoute("/y", {"DELETE"})), _IncludedRouter([])]
         ),
     ]
     got = {(r["method"], r["path"]) for r in dump_routes.walk(routes)}
-    assert got == {("GET", "/a"), ("POST", "/sub/x"), ("DELETE", "/p/y")}
+    assert got == {
+        ("GET", "/a"),
+        ("HEAD", "/a"),
+        ("GET", "/starlette"),
+        ("HEAD", "/head-only"),
+        ("POST", "/sub/x"),
+        ("DELETE", "/p/y"),
+    }
 
 
 def test_discover_finds_module_level_fastapi_assignments(tmp_path: Path) -> None:

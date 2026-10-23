@@ -5,7 +5,7 @@
 # a partially-installable repo still yields its importable routers; dump_routes.py records errors.
 set -u
 dir="$1"
-pip install -q fastapi uvicorn || exit 1
+pip install -q fastapi uvicorn poetry-core || exit 1
 found=0
 for req in "$dir"/requirements.txt "$dir"/requirements/*.txt "$dir"/requirements-*.txt; do
   [ -f "$req" ] || continue
@@ -13,13 +13,26 @@ for req in "$dir"/requirements.txt "$dir"/requirements/*.txt "$dir"/requirements
   pip install -q -r "$req" || echo "WARN: $req failed" >&2
 done
 if [ "$found" -eq 0 ] && [ -f "$dir/pyproject.toml" ]; then
-  python - "$dir/pyproject.toml" > /tmp/reqs.txt <<'EOF'
+  python - "$dir/pyproject.toml" > /tmp/reqs.txt <<'EOF' || exit 1
 import sys, tomllib
-data = tomllib.load(open(sys.argv[1], "rb"))
+from pathlib import Path
+from poetry.core.factory import Factory
+from poetry.core.version.requirements import Requirement
+
+project = Path(sys.argv[1])
+with project.open("rb") as source:
+    data = tomllib.load(source)
 deps = list(data.get("project", {}).get("dependencies", []))
 poetry = data.get("tool", {}).get("poetry", {}).get("dependencies", {})
-deps += [name for name in poetry if name.lower() != "python"]
-print("\n".join(deps))
+for name, constraints in poetry.items():
+    if name.lower() == "python":
+        continue
+    for constraint in constraints if isinstance(constraints, list) else [constraints]:
+        deps.append(Factory.create_dependency(name, constraint, root_dir=project.parent).to_pep_508())
+for dep in deps:
+    # Fail rather than drop constraints that cannot be represented as pip requirements.
+    Requirement(dep)
+    print(dep)
 EOF
   # One at a time so a single unresolvable pin does not block the rest.
   while read -r dep; do

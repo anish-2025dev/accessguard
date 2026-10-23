@@ -5,7 +5,6 @@ apply to them, and the data they touch) for a commit, and diffs base against hea
 access-control regressions.
 
 ```
-authgraph scan <path>
 authgraph diff <base-path> <head-path>
 ```
 

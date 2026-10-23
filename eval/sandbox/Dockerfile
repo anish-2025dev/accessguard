@@ -10,7 +10,6 @@ ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1 PYTHONDONTWRITEBYTECODE=1
 
 # Optional corporate/proxy CA for the build stage only (route_truth.py --ca-bundle); empty otherwise.
 COPY build-ca.crt /build-ca.crt
-ARG HTTPS_PROXY=""
 
 COPY src/ /src/
 COPY install_deps.sh /install_deps.sh
