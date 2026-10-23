@@ -112,6 +112,9 @@ _ROLE_ATOM = re.compile(
 )
 
 
+AUTHZ_NAME = re.compile(r"(admin|role|superuser|permission|staff|owner|privilege|scope)", re.I)
+
+
 def auth_raises(fn: Function) -> list[RaiseInfo]:
     """Raises that reject a caller: 401/403, or 400/404 guarded by an ownership/role predicate
     (apps often answer "not yours" with 400 or 404 to avoid leaking existence)."""
@@ -141,7 +144,14 @@ def classify(
     if raises or helper_raise:
         statuses = {r.status for r in raises}
         conds = " ".join(r.condition or "" for r in raises)
-        cond = _or([r.condition for r in raises]) if raises else None
+        # A guard that also rejects inside helpers has no self-contained predicate: comparing
+        # only its own clauses would call a refactor "weakened" (ADR 009 point 4).
+        cond = _or([r.condition for r in raises]) if raises and not helper_raise else None
+        # A function that answers 401 is authentication first, unless its name says it is a
+        # role/ownership gate (`check_user_exists` may mention `account.is_admin` in one branch).
+        authn_first = 401 in statuses and not AUTHZ_NAME.search(fn.name)
+        if authn_first:
+            return GuardInfo(GuardKind.AUTHN, 0.9, "raise", cond)
         if fn.owner_compare and (_OWNER_ATOM.search(conds) or not _ROLE_ATOM.search(conds)):
             # Kind comes from the predicate, not the status code, so 400 -> 403 is no change.
             return GuardInfo(GuardKind.AUTHZ_OWNER, 0.85, "raise", cond)
@@ -154,7 +164,9 @@ def classify(
             conf = 0.9 if (auth_feature or named or helper_raise) else 0.75
             return GuardInfo(GuardKind.AUTHN, conf, "raise", cond)
         if 403 in statuses:
-            return GuardInfo(GuardKind.AUTHZ_ROLE, 0.8 if named else 0.7, "raise", cond)
+            # A bare 403 with no role/owner predicate (business rules raise 403 too) is only a
+            # guard when the function is named like one; otherwise below CONFIRMED.
+            return GuardInfo(GuardKind.AUTHZ_ROLE, 0.8 if named else 0.6, "raise", cond)
     if token or (auth_feature and named):
         swallowed = [e for e in fn.excepts if e.body in ("log_only", "pass")]
         if swallowed:

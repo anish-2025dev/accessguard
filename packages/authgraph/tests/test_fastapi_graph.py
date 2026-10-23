@@ -523,3 +523,20 @@ def test_param_default_named_like_the_param_resolves_outside(tmp_path: Path) -> 
         },
     )
     assert eps["GET /w"].authn == Verdict.AUTH
+
+
+def test_dependencies_list_defined_elsewhere(tmp_path: Path) -> None:
+    eps = endpoints(
+        tmp_path,
+        {
+            "deps.py": DEPS + "\nadmin_checks = [Depends(require_admin)]\n",
+            "main.py": """
+                from fastapi import FastAPI
+                from deps import admin_checks
+                app = FastAPI()
+                @app.get("/admin", dependencies=admin_checks)
+                def admin(): ...
+            """,
+        },
+    )
+    assert GuardKind.AUTHZ_ROLE in {g.kind for g in eps["GET /admin"].guards}

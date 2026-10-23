@@ -314,7 +314,14 @@ class FastAPIGraph:
     def _receiver(self, path: str, scope: str, dotted: str) -> NodeKey | None:
         return self.node_of(self.ix.resolve(path, scope, dotted))
 
-    def _dep_list(self, v: Value | None, path: str, scope: str, inherited: bool) -> list[DepUse]:
+    def _dep_list(
+        self, v: Value | None, path: str, scope: str, inherited: bool, depth: int = 0
+    ) -> list[DepUse]:
+        if v is not None and v.kind == "name" and v.dotted and depth < 4:
+            # dependencies=admin_ui_checks, a list defined elsewhere
+            a = self.ix.assign(t := self.ix.resolve(path, scope, v.dotted))
+            if a is not None:
+                return self._dep_list(a.value, t.path, a.scope, inherited, depth + 1)
         out: list[DepUse] = []
         items = [] if v is None else v.items if v.kind == "list" else [v]  # tolerate a bare Depends
         for item in items:
