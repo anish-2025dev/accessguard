@@ -99,7 +99,7 @@ class ProjectIndex:
 
     def _lookup(self, path: str, scope: str, name: str, depth: int) -> Target:
         s = self.files.get(path)
-        if s is None:
+        if s is None or depth > MAX_DEPTH:  # cyclic re-exports / star imports
             return Target("unresolved", path, name)
         for i, sc in enumerate(self._scopes(scope)):
             if i > 0 and sc in s.classes:

@@ -1,0 +1,10 @@
+# Hand labels for eval/tools/replay_history.py (see its docstring).
+b64f6876a08ba91b511a72c11c3d96d34060e7238136e487b561a329ac2e3544:
+  actionable: false
+  label: tp
+  note: public index page (advisory)
+c39e5410e295455e8213748f585de4664cc76f17202548f0f588ed5439f3f919:
+  actionable: true
+  label: tp
+  note: 'Depends(authorize) moved into the handler body where it is a no-op: /api-b is now unauthenticated
+    (real bug)'

@@ -623,8 +623,9 @@ class FastAPIGraph:
                             )
                         ]
                     )
-            name = t.name
-            return Closure(unresolved=[name] if AUTHISH_EXTERNAL.search(name) else [])
+            names = [t.name] + ([a.value.dotted] if a is not None and a.value.dotted else [])
+            # An alias of something we cannot resolve (e.g. an attribute of a parameter).
+            return Closure(unresolved=[n for n in names if AUTHISH_EXTERNAL.search(n)][:1])
         if t.kind == "instance_attr":
             # fastapi_users.current_user(...) where fastapi_users = FastAPIUsers(...)
             obj, _, attr = t.name.rpartition(".")

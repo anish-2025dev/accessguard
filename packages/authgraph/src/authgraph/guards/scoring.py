@@ -44,12 +44,12 @@ NON_GUARD_EXTERNAL = frozenset(
     }
 )
 AUTH_NAME = re.compile(
-    r"(auth|current_?user|login|require|verify|permission|admin|role|token|guard|protect|"
+    r"(auth|current_?\w*user|login|require|verify|permission|admin|role|token|guard|protect|"
     r"owner|member|staff|superuser|access|principal|session|scope|jwt|api_?key|privilege)",
     re.I,
 )
 AUTHISH_EXTERNAL = re.compile(
-    r"(auth|current_?user|token|login|permission|role|admin|verif|jwt|security|principal|"
+    r"(auth|current_?\w*user|token|login|permission|role|admin|verif|jwt|security|principal|"
     r"guard|require|access|credential|api_?key|scope|superuser|logged_?in)",
     re.I,
 )
