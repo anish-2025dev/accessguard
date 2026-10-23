@@ -3,7 +3,7 @@
 GitHub App (installed like CodeRabbit) that reports access-control regressions in PRs and pushes to main:
 "who can access what, and did this change make it worse?" Full spec: @docs/PLAN.md. Decisions: `docs/adr/`.
 
-Current phase: **Phase 0 (foundations)**. Don't build features from later phases unless asked.
+Current phase: **Phase 1 (engine core, FastAPI)**. Don't build features from later phases unless asked.
 
 ## Layout
 - `packages/authgraph` - analysis engine + CLI. The ONLY component that produces findings.

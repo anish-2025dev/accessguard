@@ -1,5 +1,6 @@
 """Regenerates eval/mutations/m*_* FastAPI fixtures. Usage: python eval/tools/gen_mutations.py eval/mutations"""
 
+import json
 import shutil
 import sys
 import textwrap
@@ -416,6 +417,196 @@ case(
     base_override=MOUNT_BASE,
 )
 
+# --- Phase 1 additions: a negative for every rule, more positive shapes ----------------------
+case(
+    "m13_equivalent_guard_swap",
+    "negative",
+    "Replaces get_current_user with get_active_user, which itself depends on get_current_user.",
+    [
+        replace(
+            "app/deps.py",
+            "def require_admin(",
+            "def get_active_user(user: User = Depends(get_current_user)) -> User:\n    return user\n\n\ndef require_admin(",
+        ),
+        replace(
+            "app/routers/users.py",
+            "from app.deps import get_current_user",
+            "from app.deps import get_active_user",
+        ),
+        replace("app/routers/users.py", "Depends(get_current_user)", "Depends(get_active_user)"),
+    ],
+    [],
+)
+case(
+    "m14_guard_moved_include_to_router",
+    "negative",
+    "Moves the items guard from include_router(dependencies=) to APIRouter(dependencies=).",
+    [
+        replace(
+            "app/main.py",
+            'app.include_router(items.router, prefix="/items", dependencies=[Depends(get_current_user)])',
+            'app.include_router(items.router, prefix="/items")',
+        ),
+        replace(
+            "app/routers/items.py",
+            "router = APIRouter()",
+            "router = APIRouter(dependencies=[Depends(get_current_user)])",
+        ),
+    ],
+    [],
+)
+NOTES = d("""
+    from fastapi import APIRouter, Depends, HTTPException
+
+    from app.db import get_db
+    from app.deps import get_current_user
+    from app.models import Item, User
+
+    router = APIRouter()
+
+
+    @router.delete("/{item_id}")
+    def delete_note(item_id: int, user: User = Depends(get_current_user), db=Depends(get_db)):
+        item = db.query(Item).filter(Item.id == item_id).first()
+        if item.owner_id != user.id:
+            raise HTTPException(status_code=403, detail="not yours")
+        db.query(Item).filter(Item.id == item_id).delete()
+        db.commit()
+""")
+NOTES_CHECK = (
+    "    if item.owner_id != user.id:\n"
+    '        raise HTTPException(status_code=403, detail="not yours")\n'
+)
+NOTES_DELETE = "    db.query(Item).filter(Item.id == item_id).delete()\n    db.commit()\n"
+NOTES_MAIN = (
+    BASE["app/main.py"].replace(
+        "from app.routers import admin, items, public, users",
+        "from app.routers import admin, items, notes, public, users",
+    )
+    + 'app.include_router(notes.router, prefix="/notes")\n'
+)
+case(
+    "m15_check_moved_after_delete",
+    "positive",
+    "Moves the ownership check below the delete, so any user can delete any note.",
+    [
+        write(
+            "app/routers/notes.py",
+            NOTES.replace(NOTES_CHECK + NOTES_DELETE, NOTES_DELETE + NOTES_CHECK),
+        )
+    ],
+    [("AG-AUTH-002", "DELETE /notes/{item_id}")],
+    base_extra={"app/routers/notes.py": NOTES, "app/main.py": NOTES_MAIN},
+)
+case(
+    "m16_condition_strengthened",
+    "negative",
+    "Adds a third rejection clause to require_admin (stricter, not weaker).",
+    [
+        replace(
+            "app/deps.py",
+            'if user.role != "admin" or not user.is_active:',
+            'if user.role != "admin" or not user.is_active or user.id == 0:',
+        )
+    ],
+    [],
+)
+case(
+    "m17_role_field_on_admin_endpoint",
+    "negative",
+    "Admins may set roles: role in a body mass-assigned behind require_admin is not AG-ROLE-002.",
+    [
+        replace(
+            "app/routers/admin.py",
+            "from fastapi import APIRouter, Depends",
+            "from fastapi import APIRouter, Depends\nfrom pydantic import BaseModel",
+        ),
+        replace(
+            "app/routers/admin.py",
+            "router = APIRouter()\n",
+            "router = APIRouter()\n\n\nclass AdminUserUpdate(BaseModel):\n    role: str | None = None\n\n\n"
+            '@router.patch("/users/{user_id}")\n'
+            "def admin_update(user_id: int, body: AdminUserUpdate, admin: User = Depends(require_admin), db=Depends(get_db)):\n"
+            "    user = db.query(User).filter(User.id == user_id).first()\n"
+            "    for key, value in body.model_dump(exclude_unset=True).items():\n"
+            "        setattr(user, key, value)\n"
+            "    db.commit()\n",
+        ),
+    ],
+    [],
+)
+case(
+    "m18_mount_with_own_auth",
+    "negative",
+    "Mounts a sub-application that declares its own auth dependency.",
+    [
+        replace(
+            "app/main.py",
+            '@app.get("/reports")',
+            'internal = FastAPI(dependencies=[Depends(get_current_user)])\n\n\n@internal.post("/reindex")\n'
+            'def reindex():\n    return {"queued": True}\n\n\n'
+            'app.mount("/internal", internal)\n\n\n@app.get("/reports")',
+        )
+    ],
+    [],
+    base_override=MOUNT_BASE,
+)
+CFG = 'version: 1\npublic_routes:\n  - route: "GET /health"\n    reason: liveness probe\n'
+case(
+    "m19_config_narrowed",
+    "negative",
+    "PR removes a public route from .accessguard.yml (narrowing is never reported).",
+    [write(".accessguard.yml", "version: 1\npublic_routes: []\n")],
+    [],
+    base_extra={".accessguard.yml": CFG},
+)
+case(
+    "m20_add_api_route_unauth",
+    "positive",
+    "Registers a new admin action with add_api_route and no guard.",
+    [
+        replace(
+            "app/routers/admin.py",
+            "router = APIRouter()\n",
+            "router = APIRouter()\n\n\ndef promote(user_id: int, db=Depends(get_db)):\n"
+            '    db.query(User).filter(User.id == user_id).update({"role": "admin"})\n\n\n'
+            'router.add_api_route("/users/{user_id}/promote", promote, methods=["POST"])\n',
+        )
+    ],
+    [("AG-AUTH-001", "POST /admin/users/{user_id}/promote")],
+)
+case(
+    "m21_guard_moved_to_new_module",
+    "move",
+    "Moves get_current_user into app/security.py and imports it from there in app/deps.py.",
+    [
+        write(
+            "app/security.py", BASE["app/deps.py"].split("def require_admin(")[0].rstrip() + "\n"
+        ),
+        write(
+            "app/deps.py",
+            "from fastapi import Depends, HTTPException\n\nfrom app.models import User\n"
+            "from app.security import get_current_user\n\n\n"
+            "def require_admin(" + BASE["app/deps.py"].split("def require_admin(")[1],
+        ),
+    ],
+    [],
+)
+case(
+    "m22_admin_branch_added_owner_filter_kept",
+    "negative",
+    "Adds an unscoped admin branch next to the still-scoped user query (multiset compare).",
+    [
+        replace(
+            "app/routers/items.py",
+            "    return db.query(Item).filter(Item.id == item_id, Item.owner_id == user.id).first()",
+            '    if user.role == "admin":\n        return db.query(Item).filter(Item.id == item_id).first()\n'
+            "    return db.query(Item).filter(Item.id == item_id, Item.owner_id == user.id).first()",
+        )
+    ],
+    [],
+)
+
 
 def materialize(root: Path, files: dict[str, str]) -> None:
     for rel, content in files.items():
@@ -446,7 +637,7 @@ for c in CASES:
         f"id: {c['id']}",
         f"kind: {c['kind']}",
         "framework: fastapi",
-        f"description: {c['desc']}",
+        f"description: {json.dumps(c['desc'])}",
         "expected:" + ("" if c["expected"] else " []"),
     ]
     for rule, key in c["expected"]:

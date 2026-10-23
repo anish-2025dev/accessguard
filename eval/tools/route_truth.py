@@ -33,7 +33,7 @@ RUN_FLAGS = [
     "none",
     "--read-only",
     "--tmpfs",
-    "/tmp:size=64m",  # noqa: S108 - container-local tmpfs
+    "/tmp:size=512m",  # noqa: S108 - container-local tmpfs
     "--cap-drop",
     "ALL",
     "--security-opt",
@@ -83,6 +83,7 @@ def truth_for(repo: dict[str, Any], ca_bundle: Path | None = None) -> dict[str, 
         build = ["docker", "build", "-q", "-t", image, "--build-arg", f"APP_DIR={app_dir}"]
         build += ["--build-arg", f"PYTHON_VERSION={repo.get('python', '3.12')}"]
         build += ["--build-arg", f"MKDIRS={' '.join(repo.get('mkdirs') or [])}"]
+        build += ["--build-arg", f"INSTALL_SELF={1 if repo.get('install_self') else 0}"]
         ca_dest = Path(ctx) / "build-ca.crt"
         ca_dest.write_bytes(ca_bundle.read_bytes() if ca_bundle else b"")
         if ca_bundle and os.environ.get("HTTPS_PROXY"):

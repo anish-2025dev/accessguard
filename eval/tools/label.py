@@ -1,4 +1,7 @@
-"""Append hand labels for a replay report: python eval/tools/label.py <repo> <fp-prefix>=<tp|fp>[:act] "note" ..."""
+"""Append hand labels for a replay report.
+
+python eval/tools/label.py <repo> <fingerprint-prefix>=<tp|fp>[:act] "note" ...
+"""
 
 from __future__ import annotations
 

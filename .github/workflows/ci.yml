@@ -57,12 +57,25 @@ jobs:
           else
             echo "base branch has no eval harness yet; skipping regression baseline"
           fi
-      # Phase 0: no rules exist yet, so only the no-regression check runs. Phase 1 switches this
-      # to `make eval-gates` (absolute thresholds from eval/gates.yaml).
-      - name: Eval (no regression vs base)
-        run: make eval BASELINE="$RUNNER_TEMP/baseline/report.json"
+      # Absolute gates (eval/gates.yaml) plus no per-rule regression versus the base branch.
+      - name: Eval (gates + no regression vs base)
+        run: make eval-gates BASELINE="$RUNNER_TEMP/baseline/report.json"
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: eval-report
           path: eval/reports/
+
+  route-recall:
+    # Static routes vs the sandbox-dumped runtime route tables in eval/corpus/truth (PLAN.md §7
+    # layer 1). Only the checkouts are fetched here; scanned code is never executed in CI.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --locked
+      - name: Route recall gate
+        run: make eval-routes

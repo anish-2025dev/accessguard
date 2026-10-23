@@ -1,0 +1,5 @@
+id: m19_config_narrowed
+kind: negative
+framework: fastapi
+description: "PR removes a public route from .accessguard.yml (narrowing is never reported)."
+expected: []

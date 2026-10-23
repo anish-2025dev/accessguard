@@ -1,0 +1,5 @@
+id: m17_role_field_on_admin_endpoint
+kind: negative
+framework: fastapi
+description: "Admins may set roles: role in a body mass-assigned behind require_admin is not AG-ROLE-002."
+expected: []

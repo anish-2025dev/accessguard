@@ -15,6 +15,7 @@ ARG HTTPS_PROXY=""
 COPY src/ /src/
 COPY install_deps.sh /install_deps.sh
 ARG APP_DIR=.
+ARG INSTALL_SELF=0
 RUN if [ -s /build-ca.crt ]; then export PIP_CERT=/build-ca.crt; fi; \
     sh /install_deps.sh "/src/${APP_DIR}" && rm -f /build-ca.crt
 

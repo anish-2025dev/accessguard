@@ -1,7 +1,7 @@
 id: m04_drop_include_dependencies
 kind: positive
 framework: fastapi
-description: Removes dependencies= from include_router; list_items loses its only guard, read_item keeps its own.
+description: "Removes dependencies= from include_router; list_items loses its only guard, read_item keeps its own."
 expected:
   - rule_id: AG-AUTH-002
     key: "GET /items/"

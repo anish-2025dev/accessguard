@@ -4,12 +4,13 @@
   "errors": [
     {
       "app": "app/main.py:app",
-      "error": "Traceback (most recent call last):\n  File \"/dump_routes.py\", line 132, in dump\n    app = load(root, cand)\n  File \"/dump_routes.py\", line 94, in load\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 850, in exec_module\nModuleNotFoundError: No module named 'asyncpg'\n"
+      "error": "Traceback (most recent call last):\n  File \"/dump_routes.py\", line 134, in dump\n    app = load(root, cand)\n  File \"/dump_routes.py\", line 95, in load\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 850, in exec_module\nModuleNotFoundError: No module named 'asyncpg'\n"
     }
   ],
   "candidates": [
     "app/main.py:app"
   ],
+  "install_log": "WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv\nTraceback (most recent call last):\n  File \"<stdin>\", line 1, in <module>\nModuleNotFoundError: No module named 'tomllib'\n",
   "name": "fastapi-realworld-example-app",
   "ref": "029eb7781c60d5f563ee8990a0cbfb79b244538c"
 }

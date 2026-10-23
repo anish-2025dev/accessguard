@@ -17,6 +17,7 @@ Handles both route-table shapes: classic flat ``app.routes`` and FastAPI >= 0.16
 from __future__ import annotations
 
 import ast
+import contextlib
 import importlib.util
 import json
 import sys
@@ -129,7 +130,8 @@ def dump(root: Path, target: str) -> dict[str, Any]:
     best: dict[str, Any] = {"app": None, "routes": [], "errors": []}
     for cand in candidates:
         try:
-            app = load(root, cand)
+            with contextlib.redirect_stdout(sys.stderr):  # apps that print/log at import time
+                app = load(root, cand)
             routes = [r for r in walk(list(app.routes)) if r["path"] not in FRAMEWORK_DOC_PATHS]
         except BaseException:
             best["errors"].append({"app": cand, "error": traceback.format_exc(limit=3)})
@@ -138,6 +140,9 @@ def dump(root: Path, target: str) -> dict[str, Any]:
             best.update(app=cand, routes=routes)
     best["routes"].sort(key=lambda r: (r["path"], r["method"]))
     best["candidates"] = candidates
+    log = Path("/install.log")
+    if not best["routes"] and log.exists():
+        best["install_log"] = log.read_text(errors="replace")[-4000:]
     return best
 
 

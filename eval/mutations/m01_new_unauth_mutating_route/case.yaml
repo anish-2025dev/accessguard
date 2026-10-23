@@ -1,7 +1,7 @@
 id: m01_new_unauth_mutating_route
 kind: positive
 framework: fastapi
-description: Adds an admin action to a router that has no router-level guard and forgets require_admin.
+description: "Adds an admin action to a router that has no router-level guard and forgets require_admin."
 expected:
   - rule_id: AG-AUTH-001
     key: "POST /admin/users/{user_id}/ban"
