@@ -173,3 +173,24 @@ def test_rewritten_guard_with_disjoint_predicates_is_not_weakened() -> None:
     assert (
         weakened(F(["not", ["atom", "u['admin']"]]), F(["not", ["atom", "u.get('admin')"]])) is None
     )
+
+
+def test_adding_owner_check_to_role_checked_handler_is_not_a_removal(tmp_path: Path) -> None:
+    base = """
+from fastapi import FastAPI, HTTPException, Depends
+from deps import get_current_user
+app = FastAPI()
+@app.put("/users/{user_id}")
+def update_user(user_id: int, body: dict, current_user=Depends(get_current_user)):
+    if body.get("role") and current_user.role != "owner":
+        raise HTTPException(status_code=403)
+"""
+    head = base.replace(
+        "    if body.get",
+        '    if current_user.role != "owner" and current_user.id != user_id:\n'
+        "        raise HTTPException(status_code=403)\n    if body.get",
+    )
+    assert (
+        _diff(tmp_path, {"deps.py": DEPS, "main.py": base}, {"deps.py": DEPS, "main.py": head})
+        == []
+    )
