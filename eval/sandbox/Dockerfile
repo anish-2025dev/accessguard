@@ -15,7 +15,6 @@ RUN if [ -n "$APT_PACKAGES" ]; then apt-get update -q && \
 
 # Optional corporate/proxy CA for the build stage only (route_truth.py --ca-bundle); empty otherwise.
 COPY build-ca.crt /build-ca.crt
-ARG HTTPS_PROXY=""
 
 COPY src/ /src/
 COPY install_deps.sh /install_deps.sh

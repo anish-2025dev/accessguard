@@ -209,3 +209,33 @@ def update_user(user_id: int, body: dict, current_user=Depends(get_current_user)
         _diff(tmp_path, {"deps.py": DEPS, "main.py": base}, {"deps.py": DEPS, "main.py": head})
         == []
     )
+
+
+NEUTER_DEPS = """
+import logging
+from fastapi import Depends, Header, HTTPException
+logger = logging.getLogger(__name__)
+
+def get_current_user(authorization: str = Header(...)):
+    try:
+        claims = decode(authorization)
+    except ValueError:
+        raise HTTPException(status_code=401)
+    return {"id": claims["sub"], "role": claims.get("role", "user")}
+
+def require_admin(user=Depends(get_current_user)):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403)
+    return user
+"""
+
+
+def test_neutered_authn_is_not_reported_where_a_role_check_still_rejects(tmp_path: Path) -> None:
+    # The fallback principal still has to pass require_admin's 403, so only /items opens up.
+    head = NEUTER_DEPS.replace(
+        "        raise HTTPException(status_code=401)",
+        "        logger.warning('invalid token')\n        claims = {'sub': 0}",
+    )
+    assert _diff(
+        tmp_path, {"deps.py": NEUTER_DEPS, "main.py": MAIN}, {"deps.py": head, "main.py": MAIN}
+    ) == [("AG-AUTH-002", "GET /items")]

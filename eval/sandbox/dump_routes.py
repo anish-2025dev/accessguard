@@ -121,7 +121,7 @@ def walk(routes: list[Any], prefix: str = "") -> list[dict[str, str]]:
             out += walk(list(sub or []), prefix + path)
             continue
         methods = sorted(getattr(original, "methods", None) or [])
-        if "GET" in methods and "HEAD" in methods:
+        if kind == "Route" and "GET" in methods and "HEAD" in methods:
             methods.remove("HEAD")  # Starlette adds HEAD to every GET route
         if not methods:
             out.append(

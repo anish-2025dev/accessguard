@@ -27,14 +27,19 @@ Phase 4 (runtime verification) will add `deployment_status` / `status` events wi
    not load (nothing listens yet); copy `code` from the address bar and check `state` matches the
    value shown on the form page.
 5. Within one hour: `uv run python deploy/github-app/register.py convert <code> --env-file .env.dev`.
-   This writes `.env.dev` and `.env.pem` (both gitignored, mode 600).
+   This writes `.env.dev` and `.env.dev.pem` (both gitignored, mode 600).
 6. Install the app on a test repository from the app's settings page.
 
 ## Prod app
 
-Same steps with `manifest.prod.json` (`public: true`) after replacing `REPLACE-WITH-DOMAIN`, then
-move the values from the env file into the hosting platform's secret store and delete the local
-copies. The private key must never be committed (`*.pem` is gitignored).
+1. Replace `REPLACE-WITH-DOMAIN` in `manifest.prod.json` (`public: true`).
+2. `uv run python deploy/github-app/register.py form prod` (add `--org <org>` for an org).
+3. Open `deploy/github-app/register-prod.html`, register `accessguard`, and copy the redirect
+   code after checking the state as described above.
+4. Within one hour: `uv run python deploy/github-app/register.py convert <code> --env-file .env.prod`.
+   This writes `.env.prod` and `.env.prod.pem` (both gitignored, mode 600), separately from dev.
+5. Move the production values and private key into the hosting platform's secret store and delete
+   the local production copies. The private key must never be committed (`*.pem` is gitignored).
 
 ## Rotating secrets
 

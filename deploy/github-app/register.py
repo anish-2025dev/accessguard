@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import os
 import secrets
 import urllib.request
 from pathlib import Path
@@ -45,6 +46,14 @@ def form(env: str, org: str | None) -> Path:
     return out
 
 
+def secure_write(path: Path, content: str) -> None:
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as output:
+        os.fchmod(output.fileno(), 0o600)
+        output.truncate(0)
+        output.write(content)
+
+
 def convert(code: str, env_file: Path) -> None:
     req = urllib.request.Request(
         f"https://api.github.com/app-manifests/{code}/conversions",
@@ -53,10 +62,10 @@ def convert(code: str, env_file: Path) -> None:
     )
     with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310
         app = json.load(resp)
-    pem = env_file.with_suffix(".pem")
-    pem.write_text(app["pem"], encoding="utf-8")
-    pem.chmod(0o600)
-    env_file.write_text(
+    pem = env_file.with_name(env_file.name + ".pem")
+    secure_write(pem, app["pem"])
+    secure_write(
+        env_file,
         "\n".join(
             [
                 f"GITHUB_APP_ID={app['id']}",
@@ -68,9 +77,7 @@ def convert(code: str, env_file: Path) -> None:
             ]
         )
         + "\n",
-        encoding="utf-8",
     )
-    env_file.chmod(0o600)
     print(f"Registered {app['slug']} (id {app['id']}); secrets written to {env_file} and {pem}")
 
 

@@ -39,6 +39,10 @@ removed a concrete false positive found that way.
    Principal-scoped sinks are compared as multisets per (kind, model).
 5. **Handlers' `except` translations are not guards.** `except PermissionError: raise
    HTTPException(403)` in a handler maps service errors; it is not a check the handler performs.
+6. **A neutered authn behind an intact role check is not a finding.** When an authn guard stops
+   rejecting (logs and continues with a fallback principal) but the endpoint still runs a strict
+   role check, the fallback principal must still pass that check, so the endpoint is not opened
+   (eval case m07). Owner checks do not count: a fallback principal id can match a resource owner.
 
 ## Consequences
 Precision on the replayed histories is high (see the Phase 1 PR for the per-repo table), at the

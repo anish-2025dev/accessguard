@@ -20,7 +20,7 @@ repos:
     hooks:
       - id: mypy-authgraph
         name: mypy --strict (authgraph)
-        entry: uv run mypy packages/authgraph
+        entry: uv run mypy --strict packages/authgraph
         language: system
         pass_filenames: false
         files: ^packages/authgraph/
