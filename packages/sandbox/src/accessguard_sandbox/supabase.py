@@ -11,6 +11,18 @@ Catalog facts (Postgres 15+ system catalogs; https://www.postgresql.org/docs/cur
 ``pg_class.relrowsecurity`` / ``reloptions`` (``security_invoker``), ``has_table_privilege``,
 ``pg_policies``, and view-to-table dependencies through ``pg_rewrite`` / ``pg_depend``.
 The resulting ``DataExposure`` facts use the same reasons as ``authgraph.data.supabase``.
+
+Proof probes (FR-3.8b, ADR 016): after the catalog is read, every exposure is probed in the same
+database, one rolled-back transaction per (relation, role, op). The superuser seeds a row with
+``session_replication_role = replica`` (foreign-key triggers off), then ``SET LOCAL ROLE`` to the
+API role, with ``request.jwt.claims`` set to a fresh ``sub`` for ``authenticated``, and attempts:
+
+* ``select``: proven when the seeded row is visible;
+* ``insert``: proven when the insert succeeds or fails only on a data constraint (SQLSTATE class
+  23). Postgres checks privileges and RLS ``WITH CHECK`` before NOT NULL/CHECK constraints, so a
+  23xxx error means access was granted; 42501 means denied.
+
+Errors use psql ``VERBOSITY sqlstate`` (https://www.postgresql.org/docs/16/app-psql.html).
 """
 
 from __future__ import annotations
@@ -21,7 +33,7 @@ import subprocess
 import time
 import uuid
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 from authgraph.data.supabase import (
     ALL_PRIVS,
@@ -104,11 +116,47 @@ RUN_FLAGS = [
 ]
 
 
+COLUMNS = """
+select json_agg(c) from (
+  select n.nspname as schema, t.relname as name, a.attname as col, ty.typname as type,
+         ty.typtype as typtype, ty.typcategory as category,
+         (select e.enumlabel from pg_enum e where e.enumtypid = ty.oid
+          order by e.enumsortorder limit 1) as first_label
+  from pg_attribute a join pg_class t on t.oid = a.attrelid
+  join pg_namespace n on n.oid = t.relnamespace join pg_type ty on ty.oid = a.atttypid
+  where t.relkind in ('r', 'p') and n.nspname = any(:'schemas'::text[]) and a.attnum > 0
+    and not a.attisdropped and a.attnotnull and not a.atthasdef and a.attidentity = ''
+    and a.attgenerated = '') c
+"""
+PROBE_OPS = ("select", "insert")
+Outcome = Literal["proven", "denied", "inconclusive"]
+
+
+@dataclass(frozen=True)
+class Probe:
+    resource: str
+    role: str
+    op: str
+    outcome: Outcome
+    detail: str = ""
+
+
 @dataclass
 class SandboxResult:
     exposures: list[DataExposure]
     errors: list[str] = field(default_factory=list)
     files: int = 0
+    probes: list[Probe] = field(default_factory=list)
+
+    def proven(self, e: DataExposure) -> set[str]:
+        """The ops of ``e`` that a probe demonstrated."""
+        return {
+            p.op
+            for p in self.probes
+            if (p.resource, p.role) == (e.resource, e.role)
+            and p.op in e.ops
+            and p.outcome == "proven"
+        }
 
 
 class SandboxError(RuntimeError):
@@ -162,7 +210,22 @@ class PostgresSandbox:
         subprocess.run(["docker", "rm", "-f", name], capture_output=True)
         raise SandboxError("postgres did not become ready")
 
-    def replay(self, tree: SourceTree) -> SandboxResult:
+    def _try(self, name: str, sql: str) -> tuple[str | None, str]:
+        """Run ``sql``; (None, stdout) on success, else (SQLSTATE, "")."""
+        try:
+            return None, self._psql(name, "\\set VERBOSITY sqlstate\n" + sql)
+        except SandboxError as e:
+            last = str(e).splitlines()[-1] if str(e) else ""
+            return (last.split()[-1] if last.startswith("ERROR:") else "?"), ""
+
+    def replay(
+        self,
+        tree: SourceTree,
+        probe: bool = False,
+        claims: list[DataExposure] | None = None,
+    ) -> SandboxResult:
+        """Replay migrations and read the catalog. ``probe`` also probes the catalog exposures
+        plus any ``claims`` (for example the static engine's exposures) against the database."""
         files = migration_files(tree)
         result = SandboxResult([], files=len(files))
         if not files:
@@ -178,10 +241,122 @@ class PostgresSandbox:
             schemas = exposed_schemas(tree)
             arr = "{" + ",".join(schemas) + "}"
             raw = self._psql(name, CATALOG + ";", "-v", f"schemas={arr}")
-            result.exposures = catalog_exposures(json.loads(raw), schemas, files[-1])
+            cat = json.loads(raw)
+            result.exposures = catalog_exposures(cat, schemas, files[-1])
+            targets = [*result.exposures, *(claims or [])]
+            if probe and targets:
+                cols = json.loads(self._psql(name, COLUMNS + ";", "-v", f"schemas={arr}") or "null")
+                result.probes = self._probe(name, cat, cols or [], targets)
         finally:
             subprocess.run(["docker", "rm", "-f", name], capture_output=True)
         return result
+
+    def _probe(
+        self,
+        name: str,
+        cat: dict[str, Any],
+        cols: list[dict[str, Any]],
+        exposures: list[DataExposure],
+    ) -> list[Probe]:
+        kinds = {f"{r['schema']}.{r['name']}": r["kind"] for r in cat["relations"]}
+        sources: dict[str, list[str]] = {}
+        for d in cat["view_sources"]:
+            sources.setdefault(f"{d['vschema']}.{d['vname']}", []).append(
+                f"{d['tschema']}.{d['tname']}"
+            )
+        required: dict[str, list[dict[str, Any]]] = {}
+        for c in cols:
+            required.setdefault(f"{c['schema']}.{c['name']}", []).append(c)
+        wanted = sorted(
+            {(e.resource, e.role, op) for e in exposures for op in e.ops if op in PROBE_OPS}
+        )
+        out: list[Probe] = []
+        for resource, role, op in wanted:
+            is_view = kinds.get(resource) == "v"
+            if op == "insert" and is_view:
+                out.append(Probe(resource, role, op, "inconclusive", "insert through a view"))
+                continue
+            row = _row(resource, required.get(resource, []))
+            if row is None:
+                out.append(Probe(resource, role, op, "inconclusive", "no value for a column"))
+                continue
+            claims = json.dumps({"sub": str(uuid.uuid4()), "role": role})
+            as_role = (
+                f"set local role {role};\n"
+                f"select set_config('request.jwt.claims', {_lit(claims)}, true),"
+                f" set_config('request.jwt.claim.sub', {_lit(json.loads(claims)['sub'])}, true),"
+                f" set_config('request.jwt.claim.role', {_lit(role)}, true);\n"
+            )
+            if op == "insert":
+                sql = "begin;\nset local session_replication_role = replica;\n" + as_role
+                state, _ = self._try(name, sql + f"{row};\nrollback;\n")
+                if state is None or state.startswith("23"):
+                    out.append(Probe(resource, role, op, "proven", state or "inserted"))
+                elif state == "42501":
+                    out.append(Probe(resource, role, op, "denied", state))
+                else:
+                    out.append(Probe(resource, role, op, "inconclusive", state))
+                continue
+            seeds = sources.get(resource, []) if is_view else [resource]
+            seed_rows = [_row(t, required.get(t, [])) for t in seeds]
+            if not seeds or any(r is None for r in seed_rows):
+                out.append(Probe(resource, role, op, "inconclusive", "cannot seed a row"))
+                continue
+            sql = "begin;\nset local session_replication_role = replica;\n"
+            sql += "".join(f"{r};\n" for r in seed_rows)
+            # identifiers come from the sandbox catalog and are quoted by _ident
+            sql += as_role + f"select count(*) from {_ident(resource)};\nrollback;\n"  # noqa: S608
+            state, stdout = self._try(name, sql)
+            visible = [x for x in stdout.split() if x.isdigit()]
+            if state is None and visible and int(visible[-1]) > 0:
+                out.append(Probe(resource, role, op, "proven", f"{visible[-1]} row(s) visible"))
+            elif state == "42501" or (state is None and visible):
+                out.append(Probe(resource, role, op, "denied", state or "seeded row not visible"))
+            else:
+                out.append(Probe(resource, role, op, "inconclusive", state or "no result"))
+        return out
+
+
+def _quote(name: str) -> str:
+    return '"' + name.replace('"', '""') + '"'
+
+
+def _ident(resource: str) -> str:
+    return ".".join(_quote(p) for p in resource.split(".", 1))
+
+
+def _lit(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
+
+
+def _value(c: dict[str, Any]) -> str | None:
+    t, cat = c["type"], c["category"]
+    if c["typtype"] == "e":
+        return _lit(c["first_label"]) if c["first_label"] is not None else None
+    if t == "uuid":
+        return "gen_random_uuid()"
+    if t in {"json", "jsonb"}:
+        return "'{}'"
+    return {
+        "S": "'ag-probe'",
+        "N": "1",
+        "B": "true",
+        "D": "now()",
+        "A": "'{}'",
+        "I": "'127.0.0.1'",
+    }.get(cat)
+
+
+def _row(resource: str, required: list[dict[str, Any]]) -> str | None:
+    """``insert`` of one row filling every NOT NULL column without a default."""
+    values = [_value(c) for c in required]
+    if any(v is None for v in values):
+        return None
+    if not required:
+        return f"insert into {_ident(resource)} default values"
+    names = ", ".join(_quote(c["col"]) for c in required)
+    # quoted catalog identifiers and fixed literals only
+    return f"insert into {_ident(resource)} ({names}) values ({', '.join(map(str, values))})"  # noqa: S608
 
 
 def _opts(options: list[str]) -> dict[str, str]:
