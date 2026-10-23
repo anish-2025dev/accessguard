@@ -1,8 +1,8 @@
 """Replay a corpus repo's real history through ``authgraph diff`` (real-world precision check).
 
-Every commit that touches Python or JS/TS sources is diffed against its first parent, exactly as a push to main
-would be. Findings are written to eval/reports/replay-<name>.json for hand labelling in
-eval/corpus/labels/<name>.yaml:
+Every commit that touches Python or JS/TS sources is diffed against its first parent, exactly as
+a push to main would be. Findings are written to eval/reports/replay-<name>.json for hand
+labelling in eval/corpus/labels/<name>.yaml:
 
     <fingerprint>: {label: tp | fp, actionable: true | false, note: "..."}
 

@@ -1,0 +1,5 @@
+id: m34_role_peer_consistent
+kind: negative
+framework: fastapi
+description: "Adds POST /staff/broadcast with require_admin, like its peers."
+expected: []

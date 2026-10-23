@@ -861,6 +861,148 @@ case(
 )
 
 
+# ---- AG-ROLE-001 role consistency (Phase 3) ---------------------------------------------------
+STAFF = {
+    "app/routers/staff.py": d("""
+        from fastapi import APIRouter, Depends
+
+        from app.deps import get_current_user, require_admin
+
+        router = APIRouter()
+
+
+        @router.post("/announcements")
+        def announce(admin=Depends(require_admin)):
+            return {}
+
+
+        @router.put("/settings")
+        def update_settings(admin=Depends(require_admin)):
+            return {}
+
+
+        @router.patch("/quotas")
+        def update_quotas(admin=Depends(require_admin)):
+            return {}
+
+
+        @router.delete("/sessions")
+        def revoke_sessions(admin=Depends(require_admin)):
+            return {}
+
+
+        @router.get("/stats")
+        def stats(user=Depends(get_current_user)):
+            return {}
+    """),
+    "app/main.py": d("""
+        from fastapi import Depends, FastAPI
+
+        from app.deps import get_current_user
+        from app.routers import admin, items, public, staff, users
+
+        app = FastAPI(title="Example")
+        app.include_router(public.router)
+        app.include_router(items.router, prefix="/items", dependencies=[Depends(get_current_user)])
+        app.include_router(users.router, prefix="/users", dependencies=[Depends(get_current_user)])
+        app.include_router(admin.router, prefix="/admin")
+        app.include_router(staff.router, prefix="/staff")
+    """),
+}
+STAFF_ROUTE = '\n\n@router.post("/broadcast")\ndef broadcast(user=Depends({dep})):\n    return {{}}\n'
+
+case(
+    "m33_role_peer_inconsistency",
+    "positive",
+    "Adds POST /staff/broadcast with authentication only; the four other write routes on the "
+    "staff router all require_admin.",
+    [("write_append", "app/routers/staff.py", STAFF_ROUTE.format(dep="get_current_user"))],
+    [("AG-ROLE-001", "POST /staff/broadcast")],
+    base_extra=STAFF,
+)
+case(
+    "m34_role_peer_consistent",
+    "negative",
+    "Adds POST /staff/broadcast with require_admin, like its peers.",
+    [("write_append", "app/routers/staff.py", STAFF_ROUTE.format(dep="require_admin"))],
+    [],
+    base_extra=STAFF,
+)
+case(
+    "m35_admin_path_write_without_role",
+    "positive",
+    "Adds POST /admin/broadcast to the admin router with authentication only (absolute rule: "
+    "too few peers for statistics).",
+    [
+        (
+            "write_append",
+            "app/routers/admin.py",
+            '\n\n@router.post("/broadcast")\n'
+            "def broadcast(user=Depends(get_current_user)):\n    return {}\n",
+        ),
+        replace(
+            "app/routers/admin.py",
+            "from app.deps import require_admin",
+            "from app.deps import get_current_user, require_admin",
+        ),
+    ],
+    [("AG-ROLE-001", "POST /admin/broadcast")],
+)
+case(
+    "m36_new_read_on_role_free_router",
+    "negative",
+    "Adds GET /staff/health next to GET /staff/stats; reads on this router are authentication "
+    "only, so there is no role pattern to deviate from.",
+    [
+        (
+            "write_append",
+            "app/routers/staff.py",
+            '\n\n@router.get("/health")\ndef health(user=Depends(get_current_user)):\n'
+            "    return {}\n",
+        )
+    ],
+    [],
+    base_extra=STAFF,
+)
+EXPRESS_STAFF = {
+    "src/routes/staff.js": d("""
+        const express = require('express');
+        const { requireAdmin } = require('../auth');
+
+        const router = express.Router();
+
+        router.post('/announcements', requireAdmin, (req, res) => res.json({}));
+        router.put('/settings', requireAdmin, (req, res) => res.json({}));
+        router.patch('/quotas', requireAdmin, (req, res) => res.json({}));
+        router.delete('/sessions', requireAdmin, (req, res) => res.status(204).end());
+
+        module.exports = router;
+    """),
+}
+case(
+    "m37_express_role_peer_inconsistency",
+    "positive",
+    "Adds POST /api/staff/broadcast without requireAdmin; its four write peers have it.",
+    [
+        replace(
+            "src/routes/staff.js",
+            "module.exports = router;",
+            "router.post('/broadcast', (req, res) => res.json({}));\n\nmodule.exports = router;",
+        ),
+    ],
+    [("AG-ROLE-001", "POST /api/staff/broadcast")],
+    base_override={
+        **EXPRESS,
+        **EXPRESS_STAFF,
+        "src/app.js": EXPRESS["src/app.js"].replace(
+            "app.use('/api/admin', admin);\n",
+            "app.use('/api/admin', admin);\napp.use('/api/staff', require('./routes/staff'));\n",
+        ),
+    },
+    framework="express",
+)
+
+
 def materialize(root: Path, files: dict[str, str]) -> None:
     for rel, content in files.items():
         p = root / rel
@@ -882,6 +1024,8 @@ for c in CASES:
             head_files[path] = head_files[path].replace(old, new)
         elif e[0] == "write":
             head_files[e[1]] = e[2]
+        elif e[0] == "write_append":
+            head_files[e[1]] = head_files[e[1]] + e[2]
         else:
             del head_files[e[1]]
     materialize(cdir / "base", base_files)
