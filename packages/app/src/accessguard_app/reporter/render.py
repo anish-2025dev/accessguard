@@ -61,6 +61,7 @@ def summary(
     endpoints: int,
     intro: bool,
     demoted: Sequence[str] = (),
+    suppressed: int = 0,
 ) -> tuple[str, str]:
     """(check-run title, summary markdown)."""
     inline = [f for f in findings if f.tier == "deterministic"]
@@ -88,6 +89,11 @@ def summary(
         out.append(
             "\n<sub>Shown as advisory because their effective false-positive rate exceeds "
             f"10%: {', '.join(demoted)}</sub>"
+        )
+    if suppressed:
+        out.append(
+            f"\n<sub>{suppressed} heuristic/advisory finding(s) suppressed by LLM triage; each "
+            "suppression and its reason is logged.</sub>"
         )
     return title, "\n".join(o for o in out if o is not None)
 

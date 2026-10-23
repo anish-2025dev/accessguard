@@ -65,6 +65,15 @@ class SinkInfo(BaseModel):
     line: int
 
 
+class CallArgs(BaseModel):
+    """A call whose arguments mention local names, for inter-procedural tracing (FR-3.3)."""
+
+    callee: str  # dotted callee as written
+    args: list[list[str]] = Field(default_factory=list)  # names in each positional argument
+    kwargs: dict[str, list[str]] = Field(default_factory=dict)
+    line: int
+
+
 class MassAssign(BaseModel):
     source: str  # the request-body parameter name that is mass-assigned
     excluded: list[str] = Field(default_factory=list)  # model_dump(exclude={...}) constants
@@ -95,6 +104,8 @@ class Function(BaseModel):
     return_depends: list[Value] = Field(default_factory=list)  # `return Depends(<expr>)` args
     super_init: Value | None = None  # `super().__init__(...)` call (router subclasses)
     first_check_line: int | None = None  # first raise of 401/403 (for dominates_sink)
+    arg_calls: list[CallArgs] = Field(default_factory=list)
+    principal_reads: bool = False  # request.user / request.state.user / g.user
 
 
 class ClassInfo(BaseModel):

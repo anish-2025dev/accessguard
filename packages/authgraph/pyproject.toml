@@ -14,6 +14,10 @@ dependencies = [
     "z3-solver>=4.13",
 ]
 
+[project.optional-dependencies]
+# LLM judge backend (PLAN.md §6.13). Off unless a model is configured; tests use FakeJudge.
+llm = ["litellm>=1.82.6"]
+
 [project.scripts]
 authgraph = "authgraph.cli:main"
 

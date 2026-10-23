@@ -4,6 +4,7 @@ from authgraph.rules.auth import GuardRegression, MountedWithoutAuth, NewUnauthe
 from authgraph.rules.base import Rule, RuleContext
 from authgraph.rules.config import ConfigWidened
 from authgraph.rules.consistency import RoleConsistency
+from authgraph.rules.idor import IdorNoPrincipal, IdorPrincipalNotTied
 from authgraph.rules.role import MassAssignment
 
 ALL_RULES: list[Rule] = [
@@ -11,6 +12,8 @@ ALL_RULES: list[Rule] = [
     NewUnauthenticatedEndpoint(),
     MountedWithoutAuth(),
     RoleConsistency(),
+    IdorNoPrincipal(),
+    IdorPrincipalNotTied(),
     MassAssignment(),
     ConfigWidened(),
 ]

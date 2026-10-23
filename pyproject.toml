@@ -55,7 +55,7 @@ module = ["authgraph.*"]
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["z3"]
+module = ["z3", "litellm"]  # litellm: optional extra, not installed by default
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

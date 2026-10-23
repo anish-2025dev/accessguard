@@ -1005,6 +1005,112 @@ case(
 )
 
 
+# ---- AG-IDOR-001/002 object-level authorization (Phase 3) ------------------------------------
+def items_route(code):
+    return ("write_append", "app/routers/items.py", "\n\n" + d(code))
+
+
+ITEMS_IMPORT = replace(
+    "app/routers/items.py",
+    "from fastapi import APIRouter, Depends",
+    "from fastapi import APIRouter, Depends, HTTPException",
+)
+case(
+    "m38_idor_delete_by_id_no_user",
+    "positive",
+    "Adds DELETE /items/{item_id} that deletes by id without any reference to the current user "
+    "(the router is authenticated, so any user can delete any item).",
+    [
+        items_route("""
+            @router.delete("/{item_id}")
+            def delete_item(item_id: int, db=Depends(get_db)):
+                db.query(Item).filter(Item.id == item_id).delete()
+                db.commit()
+        """)
+    ],
+    [("AG-IDOR-001", "DELETE /items/{item_id}")],
+)
+case(
+    "m39_idor_through_service_function",
+    "positive",
+    "Adds POST /items/{item_id}/archive whose id reaches the update in a service function.",
+    [
+        (
+            "write",
+            "app/services.py",
+            d("""
+            from app.models import Item
+
+
+            def archive(db, item_id):
+                db.query(Item).filter(Item.id == item_id).update({"title": "archived"})
+                db.commit()
+        """),
+        ),
+        items_route("""
+            @router.post("/{item_id}/archive")
+            def archive_item(item_id: int, db=Depends(get_db)):
+                services.archive(db, item_id)
+        """),
+        replace(
+            "app/routers/items.py",
+            "from app.db import get_db",
+            "from app import services\nfrom app.db import get_db",
+        ),
+    ],
+    [("AG-IDOR-001", "POST /items/{item_id}/archive")],
+)
+case(
+    "m40_idor_scoped_lookup",
+    "negative",
+    "Adds DELETE /items/{item_id} scoped to the current user in the filter.",
+    [
+        items_route("""
+            @router.delete("/{item_id}")
+            def delete_item(item_id: int, user: User = Depends(get_current_user), db=Depends(get_db)):
+                db.query(Item).filter(Item.id == item_id, Item.owner_id == user.id).delete()
+                db.commit()
+        """)
+    ],
+    [],
+)
+case(
+    "m41_idor_owner_check_after_fetch",
+    "negative",
+    "Adds PATCH /items/{item_id} that fetches by id and then rejects other users with 403.",
+    [
+        ITEMS_IMPORT,
+        items_route("""
+            @router.patch("/{item_id}")
+            def rename_item(
+                item_id: int, title: str, user: User = Depends(get_current_user), db=Depends(get_db)
+            ):
+                item = db.query(Item).filter(Item.id == item_id).first()
+                if item.owner_id != user.id:
+                    raise HTTPException(status_code=403)
+                item.title = title
+                db.commit()
+        """),
+    ],
+    [],
+)
+case(
+    "m42_idor_user_not_tied_to_object",
+    "positive",
+    "Adds PUT /items/{item_id} that loads the current user but updates any item by id.",
+    [
+        items_route("""
+            @router.put("/{item_id}")
+            def update_item(item_id: int, title: str, user: User = Depends(get_current_user), db=Depends(get_db)):
+                db.query(Item).filter(Item.id == item_id).update({"title": title})
+                db.commit()
+                return {"updated_by": user.id}
+        """)
+    ],
+    [("AG-IDOR-002", "PUT /items/{item_id}")],
+)
+
+
 def materialize(root: Path, files: dict[str, str]) -> None:
     for rel, content in files.items():
         p = root / rel

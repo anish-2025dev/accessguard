@@ -48,3 +48,27 @@ def _add(services: Services, case: str) -> tuple[str, str]:
     r.commits[base] = MUTATIONS / case / "base"
     r.commits[head] = MUTATIONS / case / "head"
     return base, head
+
+
+async def test_llm_judge_can_only_suppress_and_is_reported(services: Services) -> None:
+    """With a judge configured, an advisory IDOR finding it suppresses disappears from the
+    report and the summary counts it; deterministic findings are never sent to the judge."""
+    from authgraph.facts.models import TriageResult
+    from authgraph.llm.fake import FakeJudge
+
+    judge = FakeJudge(lambda f, c: TriageResult(decision="suppress", reason="read-only lookup"))
+    services.judge = judge
+    try:
+        base, head = setup_repo(services, "m42_idor_user_not_tied_to_object")
+        await install(services)
+        g = gh(services)
+        g.set_pull(REPO, 1, base, head)
+        await post_event(services, "pull_request", pr_payload("opened", number=1))
+        await drain(services, include={"route_delivery", "scan_pr"})
+        summary = next(c for c in g.check_runs.values() if c["head_sha"] == head)["output"]
+        assert "AG-IDOR-002" not in summary["summary"]
+        assert "1 heuristic/advisory finding(s) suppressed by LLM triage" in summary["summary"]
+        assert {c.rule_id for c in judge.seen} == {"AG-IDOR-002"}
+        assert len(judge.seen) == 3  # IDOR judgements are majority-voted
+    finally:
+        services.judge = None

@@ -61,6 +61,8 @@ PRIVILEGED_FIELDS = frozenset(
 )
 PRINCIPAL_NAME = re.compile(r"(user|principal|account|member|owner|^me$|subject|identity)", re.I)
 MAX_DEP_DEPTH = 8
+MAX_TRACE_DEPTH = 4  # PLAN.md §6.4: ID params traced through a call graph of depth 4
+ID_PARAM = re.compile(r"(^id$|_id$|^uuid$|_uuid$|^pk$|_pk$)")
 NodeKey = tuple[str, str, str]  # (path, scope, variable)
 
 
@@ -896,17 +898,17 @@ class FastAPIGraph:
         elif unresolved or "<dynamic>" in path:
             verdict = Verdict.UNKNOWN
         path_params = set(re.findall(r"{(\w+)(?::\w+)?}", path))
-        sinks = [
-            Sink(
-                kind=s.kind,
-                orm=s.orm,
-                model=s.model,
-                id_param=next((n for n in s.predicate_names if n in path_params), None),
-                principal_scoped=bool(principals & set(s.predicate_names)),
-                loc=self._loc(r.file, s.line),
-            )
-            for s in fn.sinks
-        ]
+        request_ids = path_params | {p.name for p in fn.params if ID_PARAM.search(p.name)}
+        if fn.principal_reads:
+            principals.add("request.user")
+        sinks, owner_check = self._traced_sinks(
+            fn,
+            r.file,
+            {n: n for n in request_ids},
+            set(principals),
+            0,
+            set(),
+        )
         has_role = any(g.kind == GuardKind.AUTHZ_ROLE and self._enforcing(g) for g in guards)
         mass = [] if has_role else self._mass_assigned(fn, r.file)
         ep_id = f"{method} {path}"
@@ -936,8 +938,65 @@ class FastAPIGraph:
             chain=chain,
             unresolved=sorted(set(unresolved)),
             mass_assign_fields=mass,
+            principals=sorted(principals),
+            owner_check=owner_check,
             router_group=f"{node.key[0]}:{node.key[2]}",
         )
+
+    def _traced_sinks(
+        self,
+        fn: Function,
+        path: str,
+        taint: dict[str, str],
+        principals: set[str],
+        depth: int,
+        seen: set[str],
+    ) -> tuple[list[Sink], bool]:
+        """ORM sinks reached from the handler, following request ids and the principal through
+        local callees up to depth 4 (FR-3.3, PLAN.md §6.4). Returns the sinks and whether any
+        function on the way compares the principal with a fetched object (owner check)."""
+        out = [
+            Sink(
+                kind=s.kind,
+                orm=s.orm,
+                model=s.model,
+                id_param=next((taint[n] for n in s.predicate_names if n in taint), None),
+                principal_scoped=bool(principals & set(s.predicate_names)),
+                loc=self._loc(path, s.line),
+            )
+            for s in fn.sinks
+        ]
+        owner = fn.owner_compare
+        if depth >= MAX_TRACE_DEPTH:
+            return out, owner
+        for c in fn.arg_calls:
+            passes_id = any(n in taint for names in [*c.args, *c.kwargs.values()] for n in names)
+            if not passes_id:
+                continue
+            t = self.ix.resolve(path, fn.qualname, c.callee)
+            callee = self.ix.function(t) if t.kind == "function" else None
+            if callee is None or t.name in seen:
+                continue
+            params = [p.name for p in callee.params]
+            if params and params[0] in {"self", "cls"} and "." in t.name:
+                params = params[1:]
+            sub_taint: dict[str, str] = {}
+            sub_principals: set[str] = set()
+            bound = list(zip(params, c.args, strict=False)) + [
+                (k, v) for k, v in c.kwargs.items() if k in params
+            ]
+            for pname, names in bound:
+                origin = next((taint[n] for n in names if n in taint), None)
+                if origin is not None:
+                    sub_taint[pname] = origin
+                if principals & set(names) or PRINCIPAL_NAME.search(pname):
+                    sub_principals.add(pname)
+            sub, sub_owner = self._traced_sinks(
+                callee, t.path, sub_taint, sub_principals, depth + 1, seen | {t.name}
+            )
+            out += sub
+            owner = owner or sub_owner
+        return out, owner
 
     def _mass_assigned(self, fn: Function, path: str) -> list[str]:
         fields: set[str] = set()

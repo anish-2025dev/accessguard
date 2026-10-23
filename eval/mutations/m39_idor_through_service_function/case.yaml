@@ -1,0 +1,7 @@
+id: m39_idor_through_service_function
+kind: positive
+framework: fastapi
+description: "Adds POST /items/{item_id}/archive whose id reaches the update in a service function."
+expected:
+  - rule_id: AG-IDOR-001
+    key: "POST /items/{item_id}/archive"

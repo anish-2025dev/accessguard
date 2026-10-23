@@ -1,0 +1,5 @@
+id: m40_idor_scoped_lookup
+kind: negative
+framework: fastapi
+description: "Adds DELETE /items/{item_id} scoped to the current user in the filter."
+expected: []
