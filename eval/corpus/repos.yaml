@@ -83,3 +83,24 @@ express_ground_truth:        # layer 1 for Phase 3
   - name: juice-shop
     url: https://github.com/juice-shop/juice-shop
     ref: 399fba76194305a312693eee44f4df64bdf0c3ce
+    entry: server.ts
+    call: createApp
+    call_args: [{inMemoryDb: true}]
+
+express_route_ground_truth:  # layer 1 for Express (Phase 3): app._router dumped by eval/sandbox/node
+# `entry` is loaded; `call` (optional) names an exported function awaited with `call_args`.
+  - name: juice-shop
+    url: https://github.com/juice-shop/juice-shop
+    ref: 399fba76194305a312693eee44f4df64bdf0c3ce
+    entry: server.ts
+    call: createApp
+    call_args: [{inMemoryDb: true}]
+  - name: node-express-boilerplate
+    url: https://github.com/hagopj13/node-express-boilerplate
+    ref: 179ae84efec61b14206d0305d941daed6c6d07f9
+    entry: src/app.js
+    env: {NODE_ENV: development, MONGODB_URL: "mongodb://localhost/x", JWT_SECRET: sandbox}
+  - name: node-express-realworld-example-app
+    url: https://github.com/gothinkster/node-express-realworld-example-app
+    ref: 30b68e1e881462b2f4164ea09ab4c4f5699c7b0b
+    entry: src/main.ts

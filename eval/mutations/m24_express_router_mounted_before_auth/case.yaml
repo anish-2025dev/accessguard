@@ -1,0 +1,13 @@
+id: m24_express_router_mounted_before_auth
+kind: positive
+framework: express
+description: "Moves the items router mount above the /api auth middleware."
+expected:
+  - rule_id: AG-AUTH-002
+    key: "GET /api/items"
+  - rule_id: AG-AUTH-002
+    key: "GET /api/items/:id"
+  - rule_id: AG-AUTH-002
+    key: "POST /api/items"
+  - rule_id: AG-AUTH-002
+    key: "DELETE /api/items/:id"

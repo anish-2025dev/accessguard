@@ -124,6 +124,10 @@ def endpoint_deltas(b: Endpoint, h: Endpoint) -> list[Delta]:
                 )
             )
             continue
+        if hg is None and guard_key(bg) in {guard_key(g) for g in h.late_guards}:
+            # Express: the same middleware still exists but is registered after the route.
+            out.append(Delta("guard_reordered", h, b, bg, None, f"{bg.symbol} now runs after"))
+            continue
         if hg is None or not enforcing(hg) or hg.kind != bg.kind:
             # An unresolved head dependency may be the guard itself (moved, or a file that
             # no longer parses), so removal is only reported when the head is fully resolved.
@@ -184,7 +188,10 @@ def endpoint_deltas(b: Endpoint, h: Endpoint) -> list[Delta]:
 def new_endpoint_deltas(h: Endpoint) -> list[Delta]:
     out: list[Delta] = []
     if h.authn == Verdict.NO_AUTH and not h.public_by_config:
-        out.append(Delta("mount_unguarded" if h.mounted_under_auth else "new_unguarded", h))
+        if h.late_guards:  # Express: registered before the auth middleware that covers it
+            out.append(Delta("registered_before_auth", h, guard=h.late_guards[0]))
+        else:
+            out.append(Delta("mount_unguarded" if h.mounted_under_auth else "new_unguarded", h))
     if h.mass_assign_fields:
         out.append(
             Delta(
@@ -201,6 +208,11 @@ def diff(base: FactGraph, head: FactGraph) -> list[Delta]:
     out: list[Delta] = []
     for b, h in match(base, head):
         if h is None:
+            if b is not None and b.guard_only and any(enforcing(g) for g in b.guards):
+                # Express: a guard-only registration (`app.get(p, isAuthorized())`) in front of
+                # a handler registered elsewhere was deleted, so that handler is now exposed.
+                g = next(g for g in b.guards if enforcing(g))
+                out.append(Delta("guard_removed", b, b, g, None, f"{g.symbol} ({g.kind})"))
             continue
         out += endpoint_deltas(b, h) if b is not None else new_endpoint_deltas(h)
     return out

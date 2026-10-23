@@ -1,0 +1,113 @@
+{
+  "app": "src/app.js",
+  "apps": 1,
+  "routes": [
+    {
+      "method": "OPTIONS",
+      "path": "/*",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/auth/register",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/auth/login",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/auth/logout",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/auth/refresh-tokens",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/auth/forgot-password",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/auth/reset-password",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/auth/send-verification-email",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/auth/verify-email",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/users",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/users",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/users/:userId",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/users/:userId",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/users/:userId",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/docs",
+      "kind": "ExpressRoute"
+    }
+  ],
+  "errors": [
+    "stubbed mongodb-extjson: Cannot find module 'mongodb-extjson'",
+    "stubbed bson-ext: Cannot find module 'bson-ext'",
+    "stubbed snappy: Cannot find module 'snappy'",
+    "stubbed snappy/package.json: Cannot find module 'snappy/package.json'",
+    "stubbed bson-ext: Cannot find module 'bson-ext'",
+    "stubbed bson-ext/package.json: Cannot find module 'bson-ext/package.json'",
+    "stubbed bson-ext: Cannot find module 'bson-ext'",
+    "stubbed bson-ext/package.json: Cannot find module 'bson-ext/package.json'",
+    "stubbed bson-ext: Cannot find module 'bson-ext'",
+    "stubbed bson-ext/package.json: Cannot find module 'bson-ext/package.json'",
+    "stubbed bson-ext: Cannot find module 'bson-ext'",
+    "stubbed bson-ext/package.json: Cannot find module 'bson-ext/package.json'",
+    "stubbed bson-ext: Cannot find module 'bson-ext'",
+    "stubbed bson-ext/package.json: Cannot find module 'bson-ext/package.json'",
+    "stubbed bson-ext: Cannot find module 'bson-ext'",
+    "stubbed bson-ext/package.json: Cannot find module 'bson-ext/package.json'",
+    "stubbed bson-ext: Cannot find module 'bson-ext'",
+    "stubbed bson-ext/package.json: Cannot find module 'bson-ext/package.json'",
+    "stubbed bson-ext: Cannot find module 'bson-ext'",
+    "stubbed bson-ext/package.json: Cannot find module 'bson-ext/package.json'",
+    "stubbed bson-ext: Cannot find module 'bson-ext'",
+    "stubbed bson-ext/package.json: Cannot find module 'bson-ext/package.json'",
+    "stubbed bson-ext: Cannot find module 'bson-ext'",
+    "stubbed bson-ext/package.json: Cannot find module 'bson-ext/package.json'",
+    "stubbed bson-ext: Cannot find module 'bson-ext'",
+    "stubbed bson-ext/package.json: Cannot find module 'bson-ext/package.json'",
+    "stubbed bson-ext: Cannot find module 'bson-ext'",
+    "stubbed bson-ext/package.json: Cannot find module 'bson-ext/package.json'"
+  ],
+  "name": "node-express-boilerplate",
+  "ref": "179ae84efec61b14206d0305d941daed6c6d07f9"
+}

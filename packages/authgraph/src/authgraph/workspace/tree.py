@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import fnmatch
 import hashlib
+import re
 import subprocess
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, field
@@ -21,7 +22,13 @@ def blob_sha(data: bytes) -> str:
     return hashlib.sha1(b"blob %d\0" % len(data) + data, usedforsecurity=False).hexdigest()
 
 
-TEST_DIRS = frozenset({"tests", "test", "testing", "__tests__"})
+TEST_DIRS = frozenset({"tests", "test", "testing", "__tests__", "cypress", "e2e"})
+
+
+JS_TEST_NAME = re.compile(r"\.(test|spec|e2e-spec|cy)\.[cm]?[jt]sx?$")
+GENERATED_DIRS = frozenset(
+    {"node_modules", "dist", "build", ".next", "coverage", "out", "bower_components"}
+)
 
 
 def is_test_path(path: str) -> bool:
@@ -33,7 +40,14 @@ def is_test_path(path: str) -> bool:
         or name.startswith("test_")
         or name in {"conftest.py"}
         or name.endswith("_test.py")
+        or bool(JS_TEST_NAME.search(name))
     )
+
+
+def is_generated_path(path: str) -> bool:
+    """Vendored dependencies and build output are not the code under review."""
+    parts = set(path.split("/")[:-1])
+    return bool(GENERATED_DIRS & parts) or path.endswith((".min.js", ".bundle.js", ".d.ts"))
 
 
 def matches_any(path: str, patterns: Iterable[str]) -> bool:

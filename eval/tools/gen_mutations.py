@@ -1,4 +1,4 @@
-"""Regenerates eval/mutations/m*_* FastAPI fixtures. Usage: python eval/tools/gen_mutations.py eval/mutations"""
+"""Regenerates eval/mutations/m*_* FastAPI and Express fixtures. Usage: python eval/tools/gen_mutations.py eval/mutations"""
 
 import json
 import shutil
@@ -160,7 +160,9 @@ BASE = {
 CASES: list[dict] = []
 
 
-def case(cid, kind, desc, edits, expected, base_extra=None, base_override=None):
+def case(
+    cid, kind, desc, edits, expected, base_extra=None, base_override=None, framework="fastapi"
+):
     CASES.append(
         dict(
             id=cid,
@@ -170,6 +172,7 @@ def case(cid, kind, desc, edits, expected, base_extra=None, base_override=None):
             expected=expected,
             base_extra=base_extra or {},
             base_override=base_override,
+            framework=framework,
         )
     )
 
@@ -607,6 +610,257 @@ case(
 )
 
 
+# ---- Express (Phase 3) -----------------------------------------------------------------------
+EXPRESS = {
+    "package.json": d("""
+        {
+          "name": "express-fixture",
+          "private": true,
+          "dependencies": {"express": "^4.21.2", "express-jwt": "^8.5.1"}
+        }
+    """),
+    "src/auth.js": d("""
+        const { expressjwt } = require('express-jwt');
+
+        const requireAuth = expressjwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] });
+
+        function requireAdmin(req, res, next) {
+          if (!req.auth || req.auth.role !== 'admin') {
+            return res.status(403).json({ error: 'forbidden' });
+          }
+          next();
+        }
+
+        module.exports = { requireAuth, requireAdmin };
+    """),
+    "src/routes/items.js": d("""
+        const express = require('express');
+
+        const router = express.Router();
+
+        router.get('/', (req, res) => res.json([]));
+        router.get('/:id', (req, res) => res.json({ id: req.params.id }));
+        router.post('/', (req, res) => res.status(201).json(req.body));
+        router.delete('/:id', (req, res) => res.status(204).end());
+
+        module.exports = router;
+    """),
+    "src/routes/admin.js": d("""
+        const express = require('express');
+        const { requireAdmin } = require('../auth');
+
+        const router = express.Router();
+        router.use(requireAdmin);
+
+        router.get('/users', (req, res) => res.json([]));
+        router.delete('/users/:id', (req, res) => res.status(204).end());
+
+        module.exports = router;
+    """),
+    "src/routes/public.js": d("""
+        const express = require('express');
+
+        const router = express.Router();
+
+        router.get('/health', (req, res) => res.json({ ok: true }));
+        router.get('/docs', (req, res) => res.send('docs'));
+
+        module.exports = router;
+    """),
+    "src/routes/reports.js": d("""
+        const express = require('express');
+        const { requireAuth } = require('../auth');
+
+        const router = express.Router();
+
+        router.get('/', requireAuth, (req, res) => res.json([]));
+
+        module.exports = router;
+    """),
+    "src/routes/orders.ts": d("""
+        import { Request, Response, Router } from 'express';
+        import { requireAuth } from '../auth';
+
+        const router = Router();
+
+        function getOrder(req: Request, res: Response) {
+          res.json({ id: req.params.id });
+        }
+
+        function deleteOrder(req: Request, res: Response) {
+          res.status(204).end();
+        }
+
+        router.route('/:id').get(requireAuth, getOrder).delete(requireAuth, deleteOrder);
+
+        export default router;
+    """),
+    "src/app.js": d("""
+        const express = require('express');
+        const { requireAuth } = require('./auth');
+        const items = require('./routes/items');
+        const admin = require('./routes/admin');
+        const publicRoutes = require('./routes/public');
+        const reports = require('./routes/reports');
+        const orders = require('./routes/orders').default;
+
+        const app = express();
+        app.use(express.json());
+
+        app.use('/public', publicRoutes);
+        app.use('/reports', reports);
+        app.use('/orders', orders);
+
+        app.use('/api', requireAuth);
+        app.use('/api/items', items);
+        app.use('/api/admin', admin);
+
+        module.exports = app;
+    """),
+}
+EXPRESS_ITEMS = ["GET /api/items", "GET /api/items/:id", "POST /api/items", "DELETE /api/items/:id"]
+
+case(
+    "m23_express_route_before_auth_middleware",
+    "positive",
+    "Registers POST /api/export on the app before app.use('/api', requireAuth).",
+    [
+        replace(
+            "src/app.js",
+            "app.use('/api', requireAuth);\n",
+            "app.post('/api/export', (req, res) => res.json({ rows: [] }));\n"
+            "app.use('/api', requireAuth);\n",
+        )
+    ],
+    [("AG-AUTH-003", "POST /api/export")],
+    base_override=EXPRESS,
+    framework="express",
+)
+case(
+    "m24_express_router_mounted_before_auth",
+    "positive",
+    "Moves the items router mount above the /api auth middleware.",
+    [
+        replace(
+            "src/app.js",
+            "app.use('/api', requireAuth);\napp.use('/api/items', items);\n",
+            "app.use('/api/items', items);\napp.use('/api', requireAuth);\n",
+        )
+    ],
+    [("AG-AUTH-002", k) for k in EXPRESS_ITEMS],
+    base_override=EXPRESS,
+    framework="express",
+)
+case(
+    "m25_express_route_guard_removed",
+    "positive",
+    "Drops requireAuth from the reports route.",
+    [replace("src/routes/reports.js", "router.get('/', requireAuth, (req", "router.get('/', (req")],
+    [("AG-AUTH-002", "GET /reports")],
+    base_override=EXPRESS,
+    framework="express",
+)
+case(
+    "m26_express_admin_middleware_removed",
+    "positive",
+    "Removes router.use(requireAdmin) from the admin router; authentication alone remains.",
+    [replace("src/routes/admin.js", "router.use(requireAdmin);\n", "")],
+    [("AG-AUTH-002", "GET /api/admin/users"), ("AG-AUTH-002", "DELETE /api/admin/users/:id")],
+    base_override=EXPRESS,
+    framework="express",
+)
+case(
+    "m27_express_new_public_get",
+    "negative",
+    "Adds GET /public/version to the public router.",
+    [
+        replace(
+            "src/routes/public.js",
+            "module.exports = router;",
+            "router.get('/version', (req, res) => res.json({ v: 1 }));\n\nmodule.exports = router;",
+        )
+    ],
+    [],
+    base_override=EXPRESS,
+    framework="express",
+)
+case(
+    "m28_express_guard_moved_to_router_use",
+    "negative",
+    "Replaces the per-route requireAuth with router.use(requireAuth): same protection.",
+    [
+        replace(
+            "src/routes/reports.js",
+            "router.get('/', requireAuth, (req",
+            "router.use(requireAuth);\nrouter.get('/', (req",
+        )
+    ],
+    [],
+    base_override=EXPRESS,
+    framework="express",
+)
+case(
+    "m29_express_unless_exempts_collection",
+    "positive",
+    "Exempts /api/items from the JWT middleware with express-unless.",
+    [
+        replace(
+            "src/app.js",
+            "app.use('/api', requireAuth);",
+            "app.use('/api', requireAuth.unless({ path: ['/api/items'] }));",
+        )
+    ],
+    [("AG-AUTH-002", "GET /api/items"), ("AG-AUTH-002", "POST /api/items")],
+    base_override=EXPRESS,
+    framework="express",
+)
+case(
+    "m30_express_new_route_behind_auth",
+    "negative",
+    "Adds POST /api/items/:id/archive inside the authenticated items router.",
+    [
+        replace(
+            "src/routes/items.js",
+            "module.exports = router;",
+            "router.post('/:id/archive', (req, res) => res.status(202).end());\n\nmodule.exports = router;",
+        )
+    ],
+    [],
+    base_override=EXPRESS,
+    framework="express",
+)
+case(
+    "m31_express_jwt_made_optional",
+    "positive",
+    "Sets credentialsRequired: false on the shared JWT middleware; admin routes keep their role "
+    "check, every other route that used it opens up.",
+    [
+        replace(
+            "src/auth.js",
+            "algorithms: ['HS256'] });",
+            "algorithms: ['HS256'], credentialsRequired: false });",
+        )
+    ],
+    [("AG-AUTH-002", k) for k in EXPRESS_ITEMS]
+    + [
+        ("AG-AUTH-002", "GET /reports"),
+        ("AG-AUTH-002", "GET /orders/:id"),
+        ("AG-AUTH-002", "DELETE /orders/:id"),
+    ],
+    base_override=EXPRESS,
+    framework="express",
+)
+case(
+    "m32_express_ts_route_chain_guard_removed",
+    "positive",
+    "TypeScript router.route() chain: drops requireAuth from the DELETE handler only.",
+    [replace("src/routes/orders.ts", ".delete(requireAuth, deleteOrder)", ".delete(deleteOrder)")],
+    [("AG-AUTH-002", "DELETE /orders/:id")],
+    base_override=EXPRESS,
+    framework="express",
+)
+
+
 def materialize(root: Path, files: dict[str, str]) -> None:
     for rel, content in files.items():
         p = root / rel
@@ -635,7 +889,7 @@ for c in CASES:
     lines = [
         f"id: {c['id']}",
         f"kind: {c['kind']}",
-        "framework: fastapi",
+        f"framework: {c['framework']}",
         f"description: {json.dumps(c['desc'])}",
         "expected:" + ("" if c["expected"] else " []"),
     ]

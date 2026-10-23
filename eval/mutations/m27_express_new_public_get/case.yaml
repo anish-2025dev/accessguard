@@ -1,0 +1,5 @@
+id: m27_express_new_public_get
+kind: negative
+framework: express
+description: "Adds GET /public/version to the public router."
+expected: []

@@ -1,0 +1,735 @@
+{
+  "app": "server.ts",
+  "apps": 2,
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/metrics",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/*",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/.well-known/security.txt",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/security.txt",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/robots.txt",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/file-upload",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/profile/image/file",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/profile/image/url",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/rest/memories",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Users",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Users/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/Users/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/Users/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/Products",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/Products/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/Challenges",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/Hints",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Hints/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/Hints/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Complaints",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/Complaints",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Recycles",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/Recycles",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Recycles/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/Recycles/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/Recycles/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/SecurityQuestions",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/SecurityAnswers",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/Feedbacks",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/Users",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/BasketItems/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/BasketItems",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/Quantitys/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/Quantitys",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/Feedbacks/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/Cards",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Cards",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/Cards/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/Cards/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Cards/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/PrivacyRequests",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/PrivacyRequests",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/Addresss",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Addresss",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/Addresss/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/Addresss/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Addresss/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Deliverys",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Deliverys/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/rest/2fa/verify",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/2fa/status",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/rest/2fa/setup",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/rest/2fa/disable",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Products/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/Products/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Products",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Feedbacks/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/Feedbacks/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Feedbacks",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/BasketItems/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/BasketItems/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/BasketItems",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Challenges/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/Challenges/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/Challenges/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Challenges",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Complaints/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/Complaints/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/Complaints/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/SecurityQuestions/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/SecurityQuestions/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/SecurityQuestions/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/SecurityQuestions",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/SecurityAnswers",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/SecurityAnswers/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/SecurityAnswers/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/SecurityAnswers/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/PrivacyRequests/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/PrivacyRequests/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/PrivacyRequests/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Quantitys/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/Quantitys/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Quantitys",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/Hints/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/Hints",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/rest/user/login",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/user/change-password",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/rest/user/reset-password",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/user/security-question",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/user/whoami",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/user/authentication-details",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/products/search",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/basket/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/rest/basket/:id/checkout",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/rest/basket/:id/coupon/:coupon",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/admin/application-version",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/admin/application-configuration",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/repeat-notification",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/continue-code",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/continue-code-findIt",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/continue-code-fixIt",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/rest/continue-code-findIt/apply/:continueCode",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/rest/continue-code-fixIt/apply/:continueCode",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/rest/continue-code/apply/:continueCode",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/captcha",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/image-captcha",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/track-order/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/country-mapping",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/saveLoginIp",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/rest/user/data-export",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/languages",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/order-history",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/order-history/orders",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/rest/order-history/:id/delivery-status",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/wallet/balance",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/rest/wallet/balance",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/deluxe-membership",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/rest/deluxe-membership",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/memories",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/products/:id/reviews",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/rest/products/:id/reviews",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PATCH",
+      "path": "/rest/products/reviews",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/rest/products/reviews",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/rest/chat",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/rest/web3/submitKey",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/web3/nftUnlocked",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/web3/nftMintListen",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/rest/web3/walletNFTVerify",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/rest/web3/walletExploitAddress",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/b2b/v2/orders",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/the/devs/are/so/funny/they/hid/an/easter/egg/within/the/easter/egg",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/this/page/is/hidden/behind/an/incredibly/high/paywall/that/could/only/be/unlocked/by/sending/1btc/to/us",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/we/may/also/instruct/you/to/refuse/all/reasonably/necessary/responsibility",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/dataerasure",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/dataerasure",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/redirect",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/promotion",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/video",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/profile",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/profile",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/snippets/:challenge",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/snippets/verdict",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/snippets/fixes/:key",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/snippets/fixes",
+      "kind": "ExpressRoute"
+    }
+  ],
+  "errors": [
+    "stubbed sqlite3: Could not locate the bindings file. Tried:",
+    "stubbed bufferutil: Cannot find module 'bufferutil'",
+    "stubbed bufferutil: Cannot find module 'bufferutil'",
+    "stubbed sqlite3: Could not locate the bindings file. Tried:",
+    "process.exit(1) ignored"
+  ],
+  "name": "juice-shop",
+  "ref": "399fba76194305a312693eee44f4df64bdf0c3ce"
+}

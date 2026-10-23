@@ -27,6 +27,7 @@ AUTH_FLOW_HANDLER = re.compile(
 )
 REGRESSION_DELTAS = (
     "guard_removed",
+    "guard_reordered",
     "condition_weakened",
     "failure_neutered",
     "sink_before_check",
@@ -158,6 +159,9 @@ class MountedWithoutAuth:
         self, head: FactGraph, base: FactGraph | None, ctx: RuleContext
     ) -> Iterable[Finding]:
         for d in ctx.deltas:
+            if d.kind == "registered_before_auth" and not AUTH_FLOW.search(d.head.path):
+                yield self._before_auth(d, ctx)
+                continue
             if d.kind != "mount_unguarded" or AUTH_FLOW.search(d.head.path):
                 continue
             e = d.head
@@ -182,3 +186,30 @@ class MountedWithoutAuth:
                 ),
                 ctx,
             )
+
+    def _before_auth(self, d: Delta, ctx: RuleContext) -> Finding:
+        e = d.head
+        g = d.guard
+        return finalize(
+            Finding(
+                rule_id=self.id,
+                severity=_severity(e),
+                tier="deterministic",
+                title=f"{e.id} is registered before the auth middleware that covers its path",
+                endpoint_id=e.id,
+                loc=e.loc,
+                delta="registered_before_auth",
+                evidence=[
+                    *route_evidence(e),
+                    EvidenceStep(
+                        message=f"{g.symbol if g else 'auth middleware'} is registered later; "
+                        "Express runs middleware in registration order, so it never runs for "
+                        "this route",
+                        loc=g.loc if g else None,
+                    ),
+                ],
+                suggested_fix="Register the route after the auth middleware, or add the guard "
+                "to the route itself.",
+            ),
+            ctx,
+        )

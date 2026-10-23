@@ -1,0 +1,5 @@
+id: m28_express_guard_moved_to_router_use
+kind: negative
+framework: express
+description: "Replaces the per-route requireAuth with router.use(requireAuth): same protection."
+expected: []

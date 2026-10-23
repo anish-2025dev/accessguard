@@ -81,6 +81,12 @@ class Endpoint(_Model):
     # Mass assignment of privileged fields from the request body (AG-ROLE-002).
     mass_assign_fields: list[str] = Field(default_factory=list)
     router_group: str = ""  # router identity, used for peer-group comparisons
+    # Express: auth middleware that covers this path but is registered after the route, so it
+    # never runs for it (PLAN.md §6.4 guard chain).
+    late_guards: list[GuardRef] = Field(default_factory=list)
+    # Express: a route registration made only of middleware (``app.get(p, isAuthorized())``)
+    # whose final handler is registered dynamically elsewhere.
+    guard_only: bool = False
 
 
 class DataExposure(_Model):  # Supabase / Firebase
