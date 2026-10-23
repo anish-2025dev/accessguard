@@ -76,7 +76,6 @@ TOKEN_FUNCS = frozenset(
         "validate_token",
         "get_user_from_token",
         "verify_session",
-        "get_user",  # supabase.auth.get_user(jwt)
     }
 )
 AUTH_EXC_NAME = re.compile(
@@ -416,6 +415,7 @@ class _FunctionVisitor:
                     (last == "decode" and "jwt" in d.lower())
                     or last in TOKEN_FUNCS
                     or ("jwt" in d.lower() and last in {"decode", "verify"})
+                    or d.endswith("auth.get_user")  # supabase.auth.get_user(jwt)
                 ):
                     self.fn.token_decode = True
                 if id(node) not in inner_chain:
