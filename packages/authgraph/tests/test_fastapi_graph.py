@@ -324,3 +324,20 @@ def test_exception_defined_in_another_module(tmp_path: Path) -> None:
         },
     )
     assert eps["DELETE /x"].guards[0].kind == GuardKind.AUTHZ_ROLE
+
+
+def test_redefined_handler_names_keep_both_routes(tmp_path: Path) -> None:
+    eps = endpoints(
+        tmp_path,
+        {
+            "main.py": """
+                from fastapi import FastAPI
+                app = FastAPI()
+                @app.get("/a")
+                def view(): ...
+                @app.get("/b")
+                def view(): ...
+            """,
+        },
+    )
+    assert set(eps) == {"GET /a", "GET /b"}

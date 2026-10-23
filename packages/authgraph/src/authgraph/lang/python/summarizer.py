@@ -652,6 +652,11 @@ class Summarizer(ast.NodeVisitor):
             decorators=[v for d in node.decorator_list if (v := to_value(d)) is not None],
             returns=to_value(node.returns),
         )
+        prev = self.s.functions.pop(fn.qualname, None)
+        if prev is not None:  # redefinition: the name binds the later def, both may be routes
+            self.s.functions[f"{prev.qualname}#{prev.line}"] = prev.model_copy(
+                update={"qualname": f"{prev.qualname}#{prev.line}"}
+            )
         self.s.functions[fn.qualname] = _FunctionVisitor(fn, node).run()
         for st in node.body:
             self.visit(st)

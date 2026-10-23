@@ -1,4 +1,8 @@
 # Hand labels for eval/tools/replay_history.py (see its docstring).
+a7cc241786f3344077ea213fe93eee914bc6c370aff544d211370f60c2e79bc7:
+  actionable: true
+  label: tp
+  note: same no-op Depends() in the handler body for /api-a (real bug)
 b64f6876a08ba91b511a72c11c3d96d34060e7238136e487b561a329ac2e3544:
   actionable: false
   label: tp
