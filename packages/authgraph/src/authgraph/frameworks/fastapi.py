@@ -989,7 +989,7 @@ class FastAPIGraph:
                 origin = next((taint[n] for n in names if n in taint), None)
                 if origin is not None:
                     sub_taint[pname] = origin
-                if principals & set(names) or PRINCIPAL_NAME.search(pname):
+                if principals & set(names):  # only a value that holds the principal
                     sub_principals.add(pname)
             sub, sub_owner = self._traced_sinks(
                 callee, t.path, sub_taint, sub_principals, depth + 1, seen | {t.name}
