@@ -1,11 +1,1286 @@
 {
-  "app": null,
-  "routes": [],
+  "app": "lnbits/__main__.py:app",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/.well-known/lnurlp/{username}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/2fa",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/account",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/admin",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/api/v1/audit",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/api/v1/backup",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/api/v1/monitor",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/api/v1/onchain/key",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/api/v1/onchain/key",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/api/v1/onchain/key/backup",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/api/v1/onchain/key/confirm",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/api/v1/restart",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/api/v1/settings",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/api/v1/settings",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/api/v1/settings",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/api/v1/settings",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/api/v1/settings/default",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/api/v1/testemail",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/extensions/wasm",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/extensions/wasm/limits",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/extensions/wasm/{ext_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/account",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/assets",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/assets/paginated",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/assets/{asset_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/assets/{asset_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/assets/{asset_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/assets/{asset_id}/data",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/assets/{asset_id}/thumbnail",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/auth",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/auth/2fa",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/2fa/confirm",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/2fa/recovery",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/2fa/recovery/acknowledge",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/2fa/setup",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/2fa/status",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/2fa/verify",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/auth/acl",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/acl",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/auth/acl",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/auth/acl",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/auth/acl/token",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/acl/token",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/auth/first_install",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/auth/impersonate",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/impersonate",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/nostr",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/auth/password",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/auth/pubkey",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/auth/reset",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/auth/ui",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/usr",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/{provider}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/{provider}/token",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/callback/{provider_name}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/conversion",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/currencies",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "WS",
+      "path": "/api/v1/ext/ws/{ext_id}/{item_id}",
+      "kind": "APIWebSocketRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/extension",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/extension",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/extension/all",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/extension/builder",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/extension/builder/deploy",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/extension/builder/preview",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/extension/builder/zip",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/extension/release/{org}/{repo}/{tag_name}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/extension/reviews",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/extension/reviews/tags",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/extension/reviews/{ext_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/extension/wasm/invocations",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/extension/wasm/invocations/current",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/extension/wasm/invocations/stats",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/extension/wasm/invocations/{invocation_id}/stop",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/extension/wasm/runtime-limits/extensions",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/extension/wasm/runtime-limits/{ext_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/extension/{ext_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/extension/{ext_id}/activate",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/extension/{ext_id}/db",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/extension/{ext_id}/deactivate",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/extension/{ext_id}/details",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/extension/{ext_id}/disable",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/extension/{ext_id}/enable",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/extension/{ext_id}/invoice/enable",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/extension/{ext_id}/invoice/install",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/extension/{ext_id}/permissions",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/extension/{ext_id}/permissions",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/extension/{ext_id}/permissions/background-payment",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/extension/{ext_id}/permissions/check",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/extension/{ext_id}/permissions/user/{grant_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/extension/{ext_id}/permissions/wallet-payments-watch",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/extension/{ext_id}/releases",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/extension/{ext_id}/sell",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/fiat/cash",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/fiat/check/{provider}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/fiat/revolut/webhook",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/fiat/{provider}/connection_token",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/fiat/{provider}/subscription",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/fiat/{provider}/subscription/{subscription_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/health",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/lnurl/wallet/{username}/cb",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/lnurlauth",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/lnurlscan",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/lnurlscan/{code}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/onchain/address/{address_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/onchain/address/{wallet_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/onchain/addresses/{wallet_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/onchain/fees",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/onchain/hot-wallet",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/onchain/hot-wallet/status",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/onchain/hot-wallet/{wallet_id}/backup",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/onchain/hot-wallet/{wallet_id}/backup/confirm",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/onchain/hot-wallet/{wallet_id}/sign",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/onchain/psbt",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/onchain/psbt/extract",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/onchain/psbt/utxos",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/onchain/state",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/onchain/stats/daily",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/onchain/sync",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/onchain/tx",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/onchain/tx/extract",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/onchain/tx/{tx_id}/hex",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/payments",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/payments",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/payments/all/paginated",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/payments/cancel",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/payments/decode",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/payments/extra",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/payments/fee-reserve",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/payments/history",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/payments/lnurl",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/payments/paginated",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/payments/settle",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/payments/stats/breakdown",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/payments/stats/count",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/payments/stats/daily",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/payments/stats/wallets",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/payments/status",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/payments/{payment_hash}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/payments/{payment_hash}/labels",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/payments/{payment_request}/pay-with-nfc",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/qrcode",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/qrcode/{data}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/rate/history",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/rate/{currency}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/status",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tinyurl",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/tinyurl/{tinyurl_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tinyurl/{tinyurl_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/wallet",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/wallet",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/wallet",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/wallet/onchain",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/wallet/onchain",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/wallet/onchain/config",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/wallet/onchain/config",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/wallet/onchain/{wallet_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/wallet/paginated",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/wallet/reset/{wallet_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/wallet/share",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/wallet/share/invite",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/wallet/share/invite/{share_request_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/wallet/share/{share_request_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/wallet/stored_paylinks/{wallet_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/wallet/{new_name}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/wallet/{wallet_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/wallets",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/webpush",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/webpush",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ws/{item_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "WS",
+      "path": "/api/v1/ws/{item_id}",
+      "kind": "APIWebSocketRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ws/{item_id}/{data}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/audit",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/audit/api/v1",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/audit/api/v1/stats",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/blockexplorer",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/blockexplorer/api/v1/address/{address}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/blockexplorer/api/v1/block/{height}/transactions",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/blockexplorer/api/v1/blocks",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/blockexplorer/api/v1/fees",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/blockexplorer/api/v1/tip",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/blockexplorer/api/v1/tx/{txid}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/blockexplorer/api/v1/utxos/{address}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "WS",
+      "path": "/blockexplorer/api/v1/ws/address/{address}",
+      "kind": "APIWebSocketRoute"
+    },
+    {
+      "method": "WS",
+      "path": "/blockexplorer/api/v1/ws/blocks",
+      "kind": "APIWebSocketRoute"
+    },
+    {
+      "method": "WS",
+      "path": "/blockexplorer/api/v1/ws/tx/{txid}",
+      "kind": "APIWebSocketRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/blockexplorer/public",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/blockexplorer/public/{resource_type}/{resource}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/blockexplorer/{resource_type}/{resource}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/extensions",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/extensions/builder",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/extensions/builder/preview",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/extensions/builder/preview/{ext_id}/{resource}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/favicon.ico",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/first_install",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/llms.txt",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/lnurlwallet",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/manifest/{usr}.webmanifest",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/node",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/node/api/v1/channels",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/node/api/v1/channels",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/node/api/v1/channels",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/node/api/v1/channels/{channel_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/node/api/v1/channels/{channel_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/node/api/v1/info",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/node/api/v1/invoices",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/node/api/v1/ok",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/node/api/v1/payments",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/node/api/v1/peers",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/node/api/v1/peers",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/node/api/v1/peers/{peer_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/node/api/v1/phoenixd/bump",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/node/api/v1/phoenixd/close",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/node/api/v1/phoenixd/export",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/node/api/v1/phoenixd/liquidity-fees",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/node/api/v1/phoenixd/receive/{kind}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/node/api/v1/phoenixd/send",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/node/api/v1/phoenixd/status",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/node/api/v1/rank",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/node/public",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/node/public/api/v1/info",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/node/public/api/v1/rank",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/payments",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/robots.txt",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/scheduler",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/scheduler/api/v1",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/scheduler/api/v1/runs",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/scheduler/api/v1/sources",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/scheduler/runs",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/service-worker.js",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/t/{tinyurl_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/users",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/users/api/v1/balance",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/users/api/v1/user",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/users/api/v1/user",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/users/api/v1/user/{user_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/users/api/v1/user/{user_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/users/api/v1/user/{user_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/users/api/v1/user/{user_id}/activate",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/users/api/v1/user/{user_id}/admin",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/users/api/v1/user/{user_id}/reset_password",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/users/api/v1/user/{user_id}/wallet",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/users/api/v1/user/{user_id}/wallet",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/users/api/v1/user/{user_id}/wallet/{wallet}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/users/api/v1/user/{user_id}/wallet/{wallet}/lightning-address",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/users/api/v1/user/{user_id}/wallet/{wallet}/undelete",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/users/api/v1/user/{user_id}/wallets",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/uuidv4/{hex_value}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/wallet",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/wallet/{wallet_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/wallets",
+      "kind": "APIRoute"
+    }
+  ],
   "errors": [],
   "candidates": [
     "lnbits/__main__.py:app"
   ],
-  "install_log": "WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.\nWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.\nERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.\npydantic-core 2.50.1 requires typing-extensions>=4.16.0, but you have typing-extensions 4.15.0 which is incompatible.\nWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.\nWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.\n",
   "name": "lnbits",
   "ref": "04b37f0d761222561bc8606cfe7edc86cabcce35"
 }
