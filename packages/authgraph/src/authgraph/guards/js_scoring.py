@@ -64,6 +64,10 @@ VERIFY_CALLS = re.compile(
     r"(^|\.)(verify|verifyIdToken|verifySessionCookie|verifyToken|jwtVerify|decode|getSession|"
     r"getUser|getServerSession|validateToken|introspect)$"
 )
+# Request checks that reject with 401/403 but are not about identity or authorization.
+NOT_ACCESS_NAME = re.compile(
+    r"(captcha|csrf|xsrf|rate_?limit|throttle|valid|schema|sanitiz|turnstile|honeypot)", re.I
+)
 OPTIONAL_NAME = re.compile(r"(optional|maybe|soft|attach|populate|identify)", re.I)
 
 
@@ -95,6 +99,8 @@ def classify_function(fn: JsFunction, helpers: Sequence[JsFunction], name: str) 
         role = role or h.role_compare
         owner = owner or h.owner_compare
         next_error = next_error or h.next_error
+    if NOT_ACCESS_NAME.search(name):
+        return None
     named = bool(AUTH_NAME.search(name))
     rejecting = any(REJECTING_CALLS.search(c) for c in calls)
     verifies = any(VERIFY_CALLS.search(c) for c in calls)

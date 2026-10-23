@@ -599,6 +599,9 @@ class ExpressGraph:
             symbol = v.origin or self.fn_symbol(path, fn)
             if len(fn.params) >= 4:
                 return _Class("passthrough", symbol)  # error handler: runs only after a failure
+            wrapped = self._wrapped(fn, v)
+            if wrapped is not None:
+                return self.classify(wrapped)  # asyncHandler(mw): classify what it wraps
             if not fn.calls_next and (fn.sends or not fn.forwards_next):
                 # Never passes the request on (next(err) in a catch is error propagation).
                 return _Class("terminal", symbol)
@@ -606,7 +609,7 @@ class ExpressGraph:
             info = classify_function(fn, self.helpers(path, fn, v.env), name)
             if info is not None:
                 return _Class("guard", symbol, info)
-            if fn.calls_next and not fn.sends:
+            if fn.calls_next:  # passes the request on (and may answer some requests itself)
                 return _Class("passthrough", symbol)
             return _Class("terminal", symbol)
         if isinstance(v, Unk):
@@ -615,6 +618,19 @@ class ExpressGraph:
                 return _Class("unknown_auth", name)
             return _Class("unknown", name)
         return _Class("unknown", "")
+
+    def _wrapped(self, fn: JsFunction, v: Fn) -> V | None:
+        """A closure that forwards ``next`` to a function its factory received (``(fn) => (req,
+        res, next) => fn(req, res, next)``) is transparent: it guards iff the wrapped one does."""
+        if not fn.forwards_next or v.env is None:
+            return None
+        for c in fn.calls:
+            if "." in c or c in fn.params:
+                continue
+            bound = v.env.vars.get(c)
+            if isinstance(bound, (Fn, Ext, Unless)):
+                return bound
+        return None
 
     def helpers(self, path: str, fn: JsFunction, env: Env | None) -> list[JsFunction]:
         """Local functions the middleware calls (depth 2), e.g. a verify callback."""

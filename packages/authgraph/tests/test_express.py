@@ -242,3 +242,23 @@ def test_deleting_a_guard_only_registration_is_a_removal(tmp_path: Path) -> None
     head = APP.replace("app.get('/api/Users', requireAuth);\n", "")
     found = _diff(tmp_path, {"auth.js": AUTH, "app.js": APP}, {"auth.js": AUTH, "app.js": head})
     assert found == [("AG-AUTH-002", "GET /api/Users: guard removed")]
+
+
+def test_wrappers_are_transparent_and_captcha_is_not_auth(tmp_path: Path) -> None:
+    base = """
+        const express = require('express');
+        const app = express();
+        const asyncHandler = (fn) => (req, res, next) => { Promise.resolve(fn(req, res, next)).catch(next) };
+        const verifyCaptcha = () => async (req, res, next) => {
+          if (req.body.captcha === 'ok') { next() } else { res.status(401).send('wrong') }
+        };
+        const requireUser = () => (req, res, next) => {
+          if (!req.user) return res.status(401).end();
+          next();
+        };
+        app.post('/feedback', verifyCaptcha(), (req, res) => res.end());
+        app.post('/orders', asyncHandler(requireUser()), (req, res) => res.end());
+    """
+    eps = endpoints(tmp_path, {"app.js": base})
+    assert eps["POST /feedback"].authn == Verdict.NO_AUTH
+    assert eps["POST /orders"].authn == Verdict.AUTH
