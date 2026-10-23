@@ -268,3 +268,59 @@ def test_cross_module_factory_binds_router_parameter(tmp_path: Path) -> None:
         },
     )
     assert set(eps) == {"DELETE /api/x"}
+
+
+def test_flag_selected_dependency_factory(tmp_path: Path) -> None:
+    eps = endpoints(
+        tmp_path,
+        {
+            "jwt.py": """
+                from fastapi import Header, HTTPException
+                def _get_user(authorization: str = Header(...)):
+                    if not authorization:
+                        raise HTTPException(status_code=401)
+                def _get_user_optional(authorization: str = Header(None)):
+                    return None
+                def get_authorizer(*, required: bool = True):
+                    if required:
+                        return _get_user
+                    else:
+                        return _get_user_optional
+            """,
+            "main.py": """
+                from fastapi import FastAPI, Depends
+                from jwt import get_authorizer
+                app = FastAPI()
+                @app.put("/user")
+                def put(u=Depends(get_authorizer())): ...
+                @app.get("/profile")
+                def get(u=Depends(get_authorizer(required=False))): ...
+                @app.get("/dyn")
+                def dyn(u=Depends(get_authorizer(required=FLAG))): ...
+            """,
+        },
+    )
+    assert eps["PUT /user"].authn == Verdict.AUTH
+    assert eps["GET /profile"].authn == Verdict.NO_AUTH
+    assert eps["GET /dyn"].authn == Verdict.UNKNOWN
+
+
+def test_exception_defined_in_another_module(tmp_path: Path) -> None:
+    eps = endpoints(
+        tmp_path,
+        {
+            "exc.py": "from fastapi import HTTPException, status\n"
+            "privileges_exception = HTTPException(status_code=status.HTTP_403_FORBIDDEN)\n",
+            "main.py": """
+                from fastapi import FastAPI, Depends
+                from exc import privileges_exception
+                def get_current_superuser(user=None):
+                    if not user.is_superuser:
+                        raise privileges_exception
+                app = FastAPI()
+                @app.delete("/x")
+                def x(u=Depends(get_current_superuser)): ...
+            """,
+        },
+    )
+    assert eps["DELETE /x"].guards[0].kind == GuardKind.AUTHZ_ROLE

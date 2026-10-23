@@ -55,3 +55,26 @@ def equivalent(base: str, head: str) -> bool:
     b = _to_z3(json.loads(base), atoms)
     h = _to_z3(json.loads(head), atoms)
     return _valid(b == h)
+
+
+def evaluate(formula: str | None, env: dict[str, bool]) -> bool | None:
+    """Three-valued evaluation of a path condition with known boolean atoms (else None)."""
+    if formula is None:
+        return True
+
+    def ev(f: Any) -> bool | None:
+        op = f[0]
+        if op == "atom":
+            return {"True": True, "False": False}.get(f[1], env.get(f[1]))
+        if op == "not":
+            v = ev(f[1])
+            return None if v is None else not v
+        vals = [ev(a) for a in f[1:]]
+        if op == "and":
+            return False if False in vals else (None if None in vals else True)
+        return True if True in vals else (None if None in vals else False)
+
+    try:
+        return ev(json.loads(formula))
+    except (ValueError, IndexError, TypeError):
+        return None

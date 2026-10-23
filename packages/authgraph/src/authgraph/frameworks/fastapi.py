@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+from authgraph.diff.logic import evaluate
 from authgraph.facts.models import (
     ENFORCING_KINDS,
     Endpoint,
@@ -445,8 +446,31 @@ class FastAPIGraph:
             loc=loc,
         )
 
-    def _function_closure(self, t: Target, depth: int) -> Closure:
+    def _enriched(self, t: Target) -> Function | None:
+        """The function with raise statuses resolved across modules
+        (``raise privileges_exception`` where it is ``HTTPException(403)`` elsewhere)."""
         fn = self.ix.function(t)
+        if fn is None or all(r.status is not None or not r.exc for r in fn.raises):
+            return fn
+        raises = []
+        for r in fn.raises:
+            if r.status is None and r.exc and r.exc != "<reraise>":
+                et = self.ix.resolve(t.path, fn.qualname, r.exc)
+                a = self.ix.assign(et)
+                if a is not None and a.value.kind == "call":
+                    sv = a.value.kwargs.get("status_code") or (
+                        a.value.args[0] if a.value.args else None
+                    )
+                    if sv is not None and sv.kind == "const" and isinstance(sv.const, int):
+                        r = r.model_copy(update={"status": sv.const})
+                    elif sv is not None and sv.dotted:
+                        m = re.search(r"HTTP_(\d{3})", sv.dotted)
+                        r = r.model_copy(update={"status": int(m.group(1))}) if m else r
+            raises.append(r)
+        return fn.model_copy(update={"raises": raises})
+
+    def _function_closure(self, t: Target, depth: int) -> Closure:
+        fn = self._enriched(t)
         out = Closure()
         if fn is None:
             return out
@@ -495,6 +519,31 @@ class FastAPIGraph:
             return self._target_closure(self.ix.resolve(dep.path, dep.scope, v.dotted), None, depth)
         return Closure(unresolved=["<expression>"])
 
+    def _factory_closure(self, t: Target, fn: Function, call: Value, depth: int) -> Closure | None:
+        """Dependency factories: ``def require_role(r): def checker(...): ...; return checker``
+        and flag-selected returns: ``get_user(required=False)`` -> ``_get_user_optional``."""
+        env: dict[str, bool] = {}
+        params = [p for p in fn.params if p.name not in ("self", "cls")]
+        for i, p in enumerate(params):
+            v = call.kwargs.get(p.name) or (call.args[i] if i < len(call.args) else p.default)
+            if v is not None and v.kind == "const" and isinstance(v.const, bool):
+                env[p.name] = v.const
+        closures: list[Closure] = []
+        for name in dict.fromkeys(fn.return_names):
+            if evaluate(fn.return_conds.get(name), env) is False:
+                continue  # branch not taken for these arguments
+            inner = self.ix.resolve(t.path, fn.qualname, name)
+            if inner.kind == "function":
+                closures.append(self._function_closure(inner, depth))
+        if not closures:
+            return None
+        outer = self._function_closure(t, depth)
+        enforcing = [any(self._enforcing(g) for g in c.guards) for c in closures]
+        if len(set(enforcing)) > 1:  # depends on a runtime value we could not fold
+            return Closure(unresolved=[f"{fn.qualname}(<conditional>)"])
+        first = closures[0]
+        return Closure(first.guards + outer.guards, first.unresolved + outer.unresolved)
+
     def _target_closure(self, t: Target, call: Value | None, depth: int) -> Closure:
         if t.kind == "external":
             info = builtin_external(t.name, call)
@@ -517,13 +566,9 @@ class FastAPIGraph:
         if t.kind == "function":
             fn = self.ix.function(t)
             if call is not None and fn is not None and fn.return_names:
-                # dependency factory: def require_role(r): def checker(...): ...; return checker
-                for name in fn.return_names:
-                    inner = Target("function", t.path, f"{fn.qualname}.{name}")
-                    if self.ix.function(inner) is not None:
-                        c = self._function_closure(inner, depth)
-                        outer = self._function_closure(t, depth)
-                        return Closure(c.guards + outer.guards, c.unresolved + outer.unresolved)
+                factory = self._factory_closure(t, fn, call, depth)
+                if factory is not None:
+                    return factory
             return self._function_closure(t, depth)
         if t.kind == "class":
             cinfo = self.ix.klass(t)
@@ -684,7 +729,7 @@ class FastAPIGraph:
         node: Node,
         mounted_under_auth: bool,
     ) -> Endpoint | None:
-        fn = self.ix.function(r.handler)
+        fn = self._enriched(r.handler)
         if fn is None:
             return None
         guards: list[GuardRef] = []

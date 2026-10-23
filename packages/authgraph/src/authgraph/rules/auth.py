@@ -17,6 +17,11 @@ AUTH_FLOW = re.compile(
     r"readyz|livez|status|ping|public|openapi|docs)\b",
     re.I,
 )
+AUTH_FLOW_HANDLER = re.compile(
+    r"^(login|logout|sign_?in|sign_?up|register|register_user|create_access_token|"
+    r"refresh_token|forgot_password|reset_password|verify_email|webhook|health|healthcheck)",
+    re.I,
+)
 REGRESSION_DELTAS = (
     "guard_removed",
     "condition_weakened",
@@ -56,7 +61,7 @@ class NewUnauthenticatedEndpoint:
             if d.kind != "new_unguarded":
                 continue
             e = d.head
-            if AUTH_FLOW.search(e.path):
+            if AUTH_FLOW.search(e.path) or AUTH_FLOW_HANDLER.search(e.handler.rsplit(".", 1)[-1]):
                 continue
             if e.method not in MUTATING and not peers_auth.get(e.router_group):
                 continue

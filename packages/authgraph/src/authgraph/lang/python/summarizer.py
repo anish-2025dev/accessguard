@@ -288,6 +288,13 @@ class _FunctionVisitor:
                 self.fn.returns_none = True
             elif isinstance(st.value, ast.Name):
                 self.fn.return_names.append(st.value.id)
+                self.fn.return_conds[st.value.id] = _conj(conds)
+            elif isinstance(st.value, ast.IfExp):  # return a if flag else b
+                c = formula(st.value.test)
+                for branch, cond in ((st.value.body, c), (st.value.orelse, ["not", c])):
+                    if isinstance(branch, ast.Name):
+                        self.fn.return_names.append(branch.id)
+                        self.fn.return_conds[branch.id] = _conj([*conds, cond])
             elif isinstance(st.value, ast.Call) and (callee := _callee(st.value)):
                 self.fn.return_calls.append(callee)
         elif isinstance(st, ast.Match):
