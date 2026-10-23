@@ -8,6 +8,7 @@ dependencies = [
     "arq>=0.28",
     "asyncpg>=0.30",
     "authgraph",
+    "accessguard-verifier",
     "fastapi>=0.161",
     "githubkit>=0.16",
     "httpx>=0.28",
@@ -20,6 +21,7 @@ dependencies = [
 
 [tool.uv.sources]
 authgraph = { workspace = true }
+accessguard-verifier = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

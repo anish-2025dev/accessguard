@@ -14,6 +14,8 @@ primary_region = "iad"
   api = "uvicorn accessguard_app.api.asgi:app --host 0.0.0.0 --port 8000"
   worker = "arq accessguard_app.jobs.worker.HighWorker"
   worker_low = "arq accessguard_app.jobs.worker.LowWorker"
+  # Runtime verifier (ADR 015): the only process given ACCESSGUARD_VERIFIER_PRIVATE_KEY.
+  verifier = "arq accessguard_app.jobs.worker.VerifyWorker"
 
 [http_service]
   processes = ["api"]

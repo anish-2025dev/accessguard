@@ -4,7 +4,7 @@ A GitHub App that reviews pull requests and pushes for **access-control regressi
 
 It answers one question on every change: **who can access what, and did this change make it worse?**
 
-> Status: Phase 3 (breadth and data layer). The `authgraph` CLI analyses FastAPI and Express apps, Supabase migrations, Firebase rules and client bundles for secrets; the App runs locally with docker compose (see docs/runbooks/deploy-staging.md).
+> Status: Phase 4 (runtime verification). Findings can be confirmed against a PR's preview deployment with test accounts (docs/runbooks/runtime-verifier.md). The `authgraph` CLI analyses FastAPI and Express apps, Supabase migrations, Firebase rules and client bundles for secrets; the App runs locally with docker compose (see docs/runbooks/deploy-staging.md).
 
 ## How it works
 A deterministic engine (`authgraph`) builds a fact graph of every route, the auth guards that apply to it (including ones inherited from routers and middleware) and the data it touches, for both the PR's base and head. It reports only what got worse. An LLM may explain or downgrade findings, never create them.
