@@ -47,7 +47,18 @@ def weakened(base: str | None, head: str | None) -> bool | None:
         h = _to_z3(json.loads(head), atoms)
     except (ValueError, IndexError, TypeError, z3.Z3Exception):
         return None
+    ha, ba = _atom_texts(json.loads(head)), _atom_texts(json.loads(base))
+    if ha and ba and not ha & ba:
+        return None  # a rewritten guard shares no predicate with the old one: not comparable
+    if _valid(b) and base != json.dumps(["atom", "True"]):
+        return None  # a guard that rejects every request is a modelling artefact, not a fact
     return _valid(z3.Implies(h, b)) and not _valid(z3.Implies(b, h))
+
+
+def _atom_texts(f: Any) -> set[str]:
+    if f[0] == "atom":
+        return {f[1]} - {"True", "False"}
+    return set().union(*(_atom_texts(a) for a in f[1:]))
 
 
 def equivalent(base: str, head: str) -> bool:

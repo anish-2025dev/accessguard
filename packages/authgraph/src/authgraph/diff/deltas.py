@@ -97,7 +97,9 @@ def endpoint_deltas(b: Endpoint, h: Endpoint) -> list[Delta]:
             )
             continue
         if hg is None or not enforcing(hg) or hg.kind != bg.kind:
-            if not _covers(h, bg) and h.authn != Verdict.UNKNOWN:
+            # An unresolved head dependency may be the guard itself (moved, or a file that
+            # no longer parses), so removal is only reported when the head is fully resolved.
+            if not _covers(h, bg) and h.authn != Verdict.UNKNOWN and not h.unresolved:
                 out.append(Delta("guard_removed", h, b, bg, hg, f"{bg.symbol} ({bg.kind})"))
             continue
         w = weakened(bg.condition, hg.condition)

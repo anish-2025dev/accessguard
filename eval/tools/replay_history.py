@@ -2,7 +2,13 @@
 
 Every commit that touches Python is diffed against its first parent, exactly as a push to main
 would be. Findings are written to eval/reports/replay-<name>.json for hand labelling in
-eval/corpus/labels/<name>.yaml (fingerprint -> tp | fp, with a note).
+eval/corpus/labels/<name>.yaml:
+
+    <fingerprint>: {label: tp | fp, actionable: true | false, note: "..."}
+
+``label`` is factual (is the reported delta real?); ``actionable`` is whether a reviewer would be
+expected to act (PLAN.md §1 "effective false positive"). Inline precision counts only
+deterministic-tier findings, the ones posted as review comments.
 
     python eval/tools/replay_history.py full-stack-fastapi-template --commits 300
 """
@@ -55,8 +61,14 @@ def main() -> int:
     labels_file = EVAL / "corpus" / "labels" / f"{args.name}.yaml"
     labels = yaml.safe_load(labels_file.read_text()) if labels_file.exists() else {}
     labels = labels or {}
-    tp = sum(1 for f in out if labels.get(f["fingerprint"], {}).get("label") == "tp")
-    fp = sum(1 for f in out if labels.get(f["fingerprint"], {}).get("label") == "fp")
+
+    def lab(f: dict[str, object]) -> dict[str, object]:
+        return labels.get(f["fingerprint"], {}) or {}
+
+    tp = sum(1 for f in out if lab(f).get("label") == "tp")
+    fp = sum(1 for f in out if lab(f).get("label") == "fp")
+    inline = [f for f in out if f["tier"] == "deterministic" and lab(f)]
+    acted = sum(1 for f in inline if lab(f).get("actionable"))
     report = {
         "repo": args.name,
         "commits": len(timings),
@@ -64,6 +76,8 @@ def main() -> int:
         "labelled_tp": tp,
         "labelled_fp": fp,
         "unlabelled": len(out) - tp - fp,
+        "inline_labelled": len(inline),
+        "inline_actionable": acted,
         "p95_seconds": sorted(timings)[int(len(timings) * 0.95)] if timings else 0,
         "items": out,
     }
@@ -71,8 +85,11 @@ def main() -> int:
     (EVAL / "reports" / f"replay-{args.name}.json").write_text(json.dumps(report, indent=2))
     print(json.dumps({k: v for k, v in report.items() if k != "items"}))
     for f in out:
-        lab = labels.get(f["fingerprint"], {}).get("label", "?")
-        print(f"[{lab}] {f['commit'][:10]} {f['rule_id']} {f['title']}  ({f['subject'][:60]})")
+        tag = lab(f).get("label", "?")
+        print(
+            f"[{tag}] {f['fingerprint'][:12]} {f['commit'][:10]} {f['tier'][:5]} {f['rule_id']} "
+            f"{f['title']}  ({f['subject'][:50]})"
+        )
     return 0
 
 

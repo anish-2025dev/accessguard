@@ -167,3 +167,9 @@ def delete_user(uid: int, u=Depends(users.current_user(active=True, superuser=Tr
     assert _diff(tmp_path, {"main.py": base}, {"main.py": head}) == [
         ("AG-AUTH-002", "DELETE /admin/users/{uid}")
     ]
+
+
+def test_rewritten_guard_with_disjoint_predicates_is_not_weakened() -> None:
+    assert (
+        weakened(F(["not", ["atom", "u['admin']"]]), F(["not", ["atom", "u.get('admin')"]])) is None
+    )

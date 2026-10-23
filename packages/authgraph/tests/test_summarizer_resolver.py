@@ -158,3 +158,16 @@ def test_method_scope_skips_class_body(tmp_path: Path) -> None:
     summaries, _ = summarize_tree(DirectoryTree(tmp_path), MemoryCache())
     t = ProjectIndex(summaries).resolve("m.py", "C.build", "build")
     assert (t.path, t.name) == ("lib.py", "build")
+
+
+def test_early_return_conditions_later_raise() -> None:
+    fn = _fn(
+        """
+        def g(user):
+            if user:
+                return user
+            raise HTTPException(status_code=401)
+        """,
+        "g",
+    )
+    assert json.loads(fn.raises[0].condition or "") == ["not", ["atom", "user"]]

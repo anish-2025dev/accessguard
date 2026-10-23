@@ -259,8 +259,14 @@ class FastAPIGraph:
 
     def _dep_list(self, v: Value | None, path: str, scope: str, inherited: bool) -> list[DepUse]:
         out: list[DepUse] = []
-        for item in v.items if v is not None and v.kind == "list" else []:
+        items = [] if v is None else v.items if v.kind == "list" else [v]  # tolerate a bare Depends
+        for item in items:
             d = self._dep_from_call(item, path, scope, inherited)
+            if d is None and item.kind == "call" and item.dotted:
+                # dependencies=[require_permissions("x")] where the factory returns Depends(fn)
+                fn = self.ix.function(self.ix.resolve(path, scope, item.dotted))
+                if fn is not None and any(c.split(".")[-1] in DEP_CALLS for c in fn.return_calls):
+                    d = DepUse(item, path, scope, self._loc(path, item.line), inherited)
             if d:
                 out.append(d)
         return out
@@ -756,11 +762,14 @@ class FastAPIGraph:
             ) or PRINCIPAL_NAME.search(pname):
                 principals.add(pname)
         # Inline checks in the handler body count as guards too.
-        info = classify(fn, [], False)
+        # Handlers translate service errors in except blocks (``except PermissionError: raise
+        # 403``); those are not checks the handler performs, so they don't make a guard.
+        inline = fn.model_copy(update={"raises": [r for r in fn.raises if not r.in_except]})
+        info = classify(inline, [], False)
         # Reading the object and then checking it is the normal ownership pattern; only a
         # write/delete that happens before the check is a bypass (``sink_before_check``).
         first_write = min((s.line for s in fn.sinks if s.kind != "read"), default=None)
-        first_check = min((r.line for r in auth_raises(fn)), default=None)
+        first_check = min((r.line for r in auth_raises(inline)), default=None)
         if info is not None and info.kind in ENFORCING_KINDS:
             dominates = first_check is None or first_write is None or first_check < first_write
             guards.append(

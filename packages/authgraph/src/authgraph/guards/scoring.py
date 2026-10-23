@@ -134,11 +134,13 @@ def classify(fn: Function, helpers: list[Function], uses_scheme: bool) -> GuardI
     auth_feature = token or fn.reads_authorization or uses_scheme
     named = bool(AUTH_NAME.search(fn.name))
 
+    if (raises or helper_raise or token) and re.search(r"optional|maybe", fn.name, re.I):
+        return GuardInfo(GuardKind.OPTIONAL_AUTHN, 0.8, "none")
     if raises or helper_raise:
         statuses = {r.status for r in raises}
         conds = " ".join(r.condition or "" for r in raises)
         cond = _or([r.condition for r in raises]) if raises else None
-        if fn.owner_compare and _OWNER_ATOM.search(conds):
+        if fn.owner_compare and (_OWNER_ATOM.search(conds) or not _ROLE_ATOM.search(conds)):
             # Kind comes from the predicate, not the status code, so 400 -> 403 is no change.
             return GuardInfo(GuardKind.AUTHZ_OWNER, 0.85, "raise", cond)
         if _ROLE_ATOM.search(conds) or (403 in statuses and fn.role_refs):

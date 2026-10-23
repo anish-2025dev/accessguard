@@ -55,6 +55,12 @@ ROLE_ATTRS = frozenset(
 OWNER_ATTRS = frozenset(
     {"owner_id", "user_id", "owner", "author_id", "created_by", "created_by_id", "account_id"}
 )
+# Names that hold the authenticated caller (not `db_user`, which is a fetched record).
+PRINCIPAL_ROOT = re.compile(
+    r"^(current_?\w*|user|me|principal|account|auth_?user|requester|viewer|caller|actor|"
+    r"identity|session_?user|token_?data)$",
+    re.I,
+)
 PRINCIPAL_HINTS = ("user", "principal", "account", "member", "me", "owner", "subject")
 TOKEN_FUNCS = frozenset(
     {
@@ -173,6 +179,18 @@ def formula(node: ast.expr) -> list[Any]:
     return _atom(node)
 
 
+def _exits(body: list[ast.stmt]) -> bool:
+    """Does every path through ``body`` leave the enclosing block (return/raise/...)?"""
+    if not body:
+        return False
+    last = body[-1]
+    if isinstance(last, ast.Return | ast.Raise | ast.Continue | ast.Break):
+        return True
+    if isinstance(last, ast.If):
+        return _exits(last.body) and _exits(last.orelse)
+    return False
+
+
 def _conj(conds: list[list[Any]]) -> str | None:
     if not conds:
         return None
@@ -253,8 +271,14 @@ class _FunctionVisitor:
 
     # statements, tracking the path condition for raises
     def _block(self, body: list[ast.stmt], conds: list[list[Any]], in_except: bool) -> None:
+        conds = list(conds)
         for st in body:
             self._stmt(st, conds, in_except)
+            # `if user: return user` -> everything after it runs only when `not user`.
+            if isinstance(st, ast.If) and _exits(st.body) and not _exits(st.orelse):
+                conds.append(["not", formula(st.test)])
+            elif isinstance(st, ast.If) and _exits(st.orelse) and not _exits(st.body):
+                conds.append(formula(st.test))
 
     def _stmt(self, st: ast.stmt, conds: list[list[Any]], in_except: bool) -> None:
         if isinstance(st, ast.If):
@@ -269,7 +293,9 @@ class _FunctionVisitor:
                         exc=self._exc_names(h.type), body=self._handler_kind(h), line=h.lineno
                     )
                 )
-                self._block(h.body, conds, True)
+                # Rejection inside an except handler is conditional on the exception.
+                exc_atom = ["atom", "except " + "|".join(self._exc_names(h.type))]
+                self._block(h.body, [*conds, exc_atom], True)
             self._block(st.orelse, conds, in_except)
             self._block(st.finalbody, conds, in_except)
         elif isinstance(st, ast.For | ast.AsyncFor | ast.While | ast.With | ast.AsyncWith):
@@ -297,6 +323,10 @@ class _FunctionVisitor:
                         self.fn.return_conds[branch.id] = _conj([*conds, cond])
             elif isinstance(st.value, ast.Call) and (callee := _callee(st.value)):
                 self.fn.return_calls.append(callee)
+                arg = st.value.args[0] if st.value.args else None
+                if callee.split(".")[-1] in ("Depends", "Security") and isinstance(arg, ast.Name):
+                    self.fn.return_names.append(arg.id)  # return Depends(checker)
+                    self.fn.return_conds[arg.id] = _conj(conds)
         elif isinstance(st, ast.Match):
             for case in st.cases:
                 self._block(case.body, conds, in_except)
@@ -391,14 +421,22 @@ class _FunctionVisitor:
         self.fn.role_refs = sorted(set(self.fn.role_refs))
 
     def _owner_compare(self, node: ast.Compare) -> None:
+        """``item.owner_id == user.id`` or ``current_user["username"] != username``."""
         sides = [node.left, *node.comparators]
-        attrs = [s.attr for s in sides if isinstance(s, ast.Attribute)]
-        if any(a in OWNER_ATTRS for a in attrs) and any(
-            isinstance(s, ast.Attribute)
-            and s.attr == "id"
-            and any(h in (_root_name(s) or "").lower() for h in PRINCIPAL_HINTS)
-            for s in sides
-        ):
+
+        def principal(n: ast.AST) -> bool:
+            return isinstance(n, ast.Attribute | ast.Subscript) and bool(
+                PRINCIPAL_ROOT.match(_root_name(n) or "")
+            )
+
+        owner_attr = any(isinstance(n, ast.Attribute) and n.attr in OWNER_ATTRS for n in sides)
+        # The other side is request/data derived (a name or a fetched object's field), never a
+        # constant: `user.role == "admin"` is a role check, not ownership.
+        request_value = any(
+            isinstance(n, ast.Name | ast.Attribute | ast.Subscript) and not principal(n)
+            for n in sides
+        )
+        if any(principal(n) for n in sides) and (owner_attr or request_value):
             self.fn.owner_compare = True
 
     def _sink(self, call: ast.Call) -> None:

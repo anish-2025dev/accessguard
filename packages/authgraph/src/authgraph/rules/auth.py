@@ -14,9 +14,12 @@ MUTATING = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 AUTH_FLOW = re.compile(
     r"/(login|logout|signin|sign-in|signup|sign-up|register|token|refresh|password|"
     r"reset|recover|forgot|verify|confirm|callback|oauth|webhooks?|health|healthz|"
-    r"readyz|livez|status|ping|public|openapi|docs)\b",
+    r"readyz|livez|status|ping|public|openapi|docs|auth)\b",
     re.I,
 )
+# `POST /users` with no auth is the signup convention; privileged fields in its body are still
+# reported by AG-ROLE-002.
+SIGNUP = re.compile(r"/(users?|accounts?|members?)/?$", re.I)
 AUTH_FLOW_HANDLER = re.compile(
     r"^(login|logout|sign_?in|sign_?up|register|register_user|create_access_token|"
     r"refresh_token|forgot_password|reset_password|verify_email|webhook|health|healthcheck)",
@@ -63,13 +66,18 @@ class NewUnauthenticatedEndpoint:
             e = d.head
             if AUTH_FLOW.search(e.path) or AUTH_FLOW_HANDLER.search(e.handler.rsplit(".", 1)[-1]):
                 continue
+            if e.method == "POST" and SIGNUP.search(e.path):
+                continue
             if e.method not in MUTATING and not peers_auth.get(e.router_group):
                 continue
+            # Reads next to authenticated peers are often public by design (ADR 009): they go to
+            # the check summary (advisory) unless the path is administrative.
+            inline = e.method in MUTATING or "admin_path" in e.sensitivity
             yield finalize(
                 Finding(
                     rule_id=self.id,
-                    severity=_severity(e),
-                    tier="deterministic",
+                    severity=_severity(e) if inline else "low",
+                    tier="deterministic" if inline else "advisory",
                     title=f"{e.id} is reachable without authentication",
                     endpoint_id=e.id,
                     loc=e.loc,
@@ -106,6 +114,8 @@ class GuardRegression:
                 by_ep.setdefault(d.head.id, []).append(d)
         for ep_id, ds in sorted(by_ep.items()):
             e = ds[0].head
+            if AUTH_FLOW.search(e.path) or AUTH_FLOW_HANDLER.search(e.handler.rsplit(".", 1)[-1]):
+                continue  # login/signup/token endpoints authenticate the caller by design
             steps = route_evidence(e)
             for d in ds:
                 where = d.guard.loc if d.guard else None
