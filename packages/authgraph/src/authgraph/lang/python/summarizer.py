@@ -8,6 +8,7 @@ from __future__ import annotations
 import ast
 import json
 import re
+from http import HTTPStatus
 from typing import Any
 
 from authgraph.lang.python.summary import (
@@ -209,6 +210,9 @@ def _status_of(node: ast.AST | None) -> int | None:
         m = re.search(r"HTTP_(\d{3})", d)
         if m:
             return int(m.group(1))
+        last = d.rsplit(".", 1)[-1]
+        if last in HTTPStatus.__members__:  # http.HTTPStatus.UNAUTHORIZED and friends
+            return int(HTTPStatus[last])
     return None
 
 
@@ -667,6 +671,15 @@ class Summarizer(ast.NodeVisitor):
         if isinstance(call, ast.Await):
             call = call.value
         self._manual_decorator(call, node.lineno)
+        if (
+            isinstance(call, ast.Call)
+            and any(
+                isinstance(a, ast.Name) for a in [*call.args, *(k.value for k in call.keywords)]
+            )
+            and (v := to_value(call)) is not None
+            and v.dotted
+        ):
+            self.s.call_stmts.append(Assign(scope=self.qual, target="", value=v, line=node.lineno))
         if isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute):
             recv = dotted(call.func.value)
             if recv and call.func.attr in ROUTER_METHODS:

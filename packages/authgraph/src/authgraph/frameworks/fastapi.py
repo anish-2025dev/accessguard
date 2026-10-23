@@ -240,7 +240,7 @@ class FastAPIGraph:
         if self._call_sites is None:
             self._call_sites = {}
             for path, s in self.ix.files.items():
-                for a in s.assigns:
+                for a in [*s.assigns, *s.call_stmts]:
                     if a.value.kind == "call" and a.value.dotted:
                         t = self.ix.resolve(path, a.scope, a.value.dotted)
                         if t.kind == "function":
@@ -249,10 +249,29 @@ class FastAPIGraph:
                             )
         return self._call_sites
 
+    def _lifespans(self) -> dict[tuple[str, str], NodeKey]:
+        if "_lifespan_map" not in self.__dict__:
+            out: dict[tuple[str, str], NodeKey] = {}
+            for key in self.nodes:
+                path, scope, name = key
+                a = self.ix.assign(Target("assign", path, name, scope))
+                lv = a.value.kwargs.get("lifespan") if a is not None else None
+                if lv is not None and lv.dotted:
+                    ft = self.ix.resolve(path, scope, lv.dotted)
+                    if ft.kind == "function":
+                        out[(ft.path, ft.name)] = key
+            self.__dict__["_lifespan_map"] = out
+        return self.__dict__["_lifespan_map"]  # type: ignore[no-any-return]
+
     def _param_args(self, t: Target) -> list[tuple[Value, str, str]]:
         fn = self.ix.function(Target("function", t.path, t.scope))
         if fn is None:
             return []
+        owner = self._lifespans().get((t.path, t.scope))
+        if owner is not None and fn.params and fn.params[0].name == t.name:
+            # FastAPI(lifespan=fn): Starlette calls fn(app) with the application itself.
+            node = self.nodes[owner]
+            return [(Value(kind="name", dotted=owner[2]), node.key[0], owner[1])]
         names = [p.name for p in fn.params]
         idx = names.index(t.name)
         if names and names[0] in ("self", "cls"):
@@ -322,13 +341,16 @@ class FastAPIGraph:
     def param_deps(self, fn: Function, path: str) -> list[tuple[str, DepUse]]:
         """(param name, dependency) for ``Depends`` defaults and ``Annotated[..., Depends()]``."""
         out: list[tuple[str, DepUse]] = []
+        # Defaults and annotations are evaluated where the function is defined, not inside it:
+        # `api_key: str = Security(api_key)` refers to the module-level scheme, not the param.
+        outer = fn.qualname.split("#")[0].rpartition(".")[0]
         for p in fn.params:
             if p.default is not None:
-                d = self._dep_from_call(p.default, path, fn.qualname, False, p.annotation)
+                d = self._dep_from_call(p.default, path, outer, False, p.annotation)
                 if d:
                     out.append((p.name, d))
                     continue
-            for d in self._annotated_deps(p.annotation, path, fn.qualname, 0):
+            for d in self._annotated_deps(p.annotation, path, outer, 0):
                 out.append((p.name, d))
         return out
 
@@ -513,6 +535,28 @@ class FastAPIGraph:
             raises.append(r)
         return fn.model_copy(update={"raises": raises})
 
+    def _helpers(self, path: str, scope: str, callee: str) -> list[Function]:
+        """Functions a guard delegates to: a helper function, or every method of a checker class
+        it instantiates or calls (``check = KeyChecker(...); await check(request)``)."""
+        t = self.ix.resolve(path, scope, callee)
+        if t.kind == "function":
+            fn = self.ix.function(t)
+            return [fn] if fn is not None else []
+        if t.kind == "assign":
+            a = self.ix.assign(t)
+            if a is not None and a.value.kind == "call" and a.value.dotted:
+                t = self.ix.resolve(t.path, a.scope, a.value.dotted)
+        return self._class_methods(t, 0) if t.kind == "class" else []
+
+    def _class_methods(self, t: Target, depth: int) -> list[Function]:
+        info = self.ix.klass(t)
+        if info is None or depth > 4:
+            return []
+        out = [f for q in info.methods if (f := self.ix.function(Target("function", t.path, q)))]
+        for b in info.bases:
+            out += self._class_methods(self.ix.resolve(t.path, "", b), depth + 1)
+        return out
+
     def _function_closure(self, t: Target, depth: int) -> Closure:
         fn = self._enriched(t)
         out = Closure()
@@ -532,11 +576,7 @@ class FastAPIGraph:
             ):
                 after_authn = True
         helpers = [
-            h
-            for c in fn.calls
-            if (ht := self.ix.resolve(t.path, fn.qualname, c)).kind == "function"
-            and (h := self.ix.function(ht)) is not None
-            and h is not fn
+            h for c in fn.calls for h in self._helpers(t.path, fn.qualname, c) if h is not fn
         ]
         info = classify(fn, helpers, uses_scheme and not after_authn, after_authn)
         decl = self.config.guard_decl(symbol)

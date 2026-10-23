@@ -449,3 +449,77 @@ def test_decorator_applied_by_hand(tmp_path: Path) -> None:
         },
     )
     assert set(eps) == {"POST /auth/register"}
+
+
+def test_routers_included_from_lifespan_through_helpers(tmp_path: Path) -> None:
+    eps = endpoints(
+        tmp_path,
+        {
+            "core.py": """
+                from fastapi import APIRouter, FastAPI
+                router = APIRouter(prefix="/api")
+                @router.get("/wallet")
+                def wallet(): ...
+                def init_core_routers(app: FastAPI):
+                    app.include_router(router)
+            """,
+            "main.py": """
+                from contextlib import asynccontextmanager
+                from fastapi import FastAPI
+                from core import init_core_routers
+                async def startup(app: FastAPI):
+                    init_core_routers(app)
+                @asynccontextmanager
+                async def lifespan(app: FastAPI):
+                    await startup(app)
+                    yield
+                def create_app() -> FastAPI:
+                    app = FastAPI(lifespan=lifespan)
+                    return app
+                app = create_app()
+            """,
+        },
+    )
+    assert set(eps) == {"GET /api/wallet"}
+
+
+def test_guard_delegating_to_checker_class(tmp_path: Path) -> None:
+    eps = endpoints(
+        tmp_path,
+        {
+            "main.py": """
+                from fastapi import FastAPI, Depends, HTTPException, Request
+                class BaseKeyChecker:
+                    def _extract(self, request):
+                        if "X-Api-Key" not in request.headers:
+                            raise HTTPException(status_code=401)
+                class KeyChecker(BaseKeyChecker):
+                    async def __call__(self, request):
+                        return self._extract(request)
+                async def require_admin_key(request: Request):
+                    check = KeyChecker()
+                    return await check(request)
+                app = FastAPI()
+                @app.delete("/wallet")
+                def delete_wallet(k=Depends(require_admin_key)): ...
+            """,
+        },
+    )
+    assert eps["DELETE /wallet"].authn == Verdict.AUTH
+
+
+def test_param_default_named_like_the_param_resolves_outside(tmp_path: Path) -> None:
+    eps = endpoints(
+        tmp_path,
+        {
+            "main.py": """
+                from fastapi import FastAPI, Security
+                from fastapi.security import APIKeyHeader
+                api_key_header = APIKeyHeader(name="X-Api-Key")
+                app = FastAPI()
+                @app.get("/w")
+                def w(api_key_header: str = Security(api_key_header)): ...
+            """,
+        },
+    )
+    assert eps["GET /w"].authn == Verdict.AUTH

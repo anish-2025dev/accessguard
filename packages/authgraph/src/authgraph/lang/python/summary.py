@@ -127,3 +127,6 @@ class FileSummary(BaseModel):
     functions: dict[str, Function] = Field(default_factory=dict)
     classes: dict[str, ClassInfo] = Field(default_factory=dict)
     method_calls: list[MethodCall] = Field(default_factory=list)
+    # Statement-level calls of plain functions with name arguments (``init_routers(app)``), so a
+    # parameter can be bound to the value its callers pass.
+    call_stmts: list[Assign] = Field(default_factory=list)

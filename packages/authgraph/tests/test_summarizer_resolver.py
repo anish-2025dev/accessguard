@@ -171,3 +171,16 @@ def test_early_return_conditions_later_raise() -> None:
         "g",
     )
     assert json.loads(fn.raises[0].condition or "") == ["not", ["atom", "user"]]
+
+
+def test_http_status_enum_names() -> None:
+    fn = _fn(
+        """
+        def g(key):
+            if not key:
+                raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
+            raise HTTPException(http.HTTPStatus.FORBIDDEN, "no")
+        """,
+        "g",
+    )
+    assert [r.status for r in fn.raises] == [401, 403]
