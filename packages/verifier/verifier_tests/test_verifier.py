@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
 import pickle
 import re
 
@@ -17,13 +16,14 @@ from accessguard_verifier.tools import build_toolset
 from accessguard_verifier.vault import CredentialIn, MemoryStore, Vault
 from accessguard_verifier.verify import verify
 from authgraph.facts.models import Endpoint, Finding, Loc
+from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
 
 HOST = "pr-7-acme.vercel.app"
 PUBLIC_IP = "76.76.21.21"
 
 
 def _vault() -> Vault:
-    return Vault(os.urandom(32), MemoryStore())
+    return Vault(X25519PrivateKey.generate(), MemoryStore())
 
 
 def test_vault_envelope_and_no_leaks() -> None:
@@ -38,6 +38,8 @@ def test_vault_envelope_and_no_leaks() -> None:
         assert "tok-a" not in repr(cred) and "tok-a" not in str(cred)
         with pytest.raises(TypeError):
             pickle.dumps(cred)
+        # The sealing side cannot open what it stored (it has no private key).
+        assert not hasattr(v.sealer(), "open")
         # Ciphertext is bound to (repo, label): moving it to another repo fails to open.
         await v.store.put(2, "user_a", sealed)
         with pytest.raises(Exception):  # noqa: B017 - cryptography InvalidTag
