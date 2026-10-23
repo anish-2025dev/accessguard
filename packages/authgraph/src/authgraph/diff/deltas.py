@@ -79,12 +79,25 @@ def _covers(head: Endpoint, removed: GuardRef) -> bool:
     return any(g.kind == removed.kind for g in h_enf)
 
 
+def moved_into_new_guard(b: Endpoint, h: Endpoint, bg: GuardRef) -> bool:
+    base_keys = {guard_key(g) for g in b.guards}
+    return any(
+        enforcing(g) and g.kind == bg.kind and guard_key(g) not in base_keys for g in h.guards
+    )
+
+
 def endpoint_deltas(b: Endpoint, h: Endpoint) -> list[Delta]:
     out: list[Delta] = []
-    h_all = {guard_key(g): g for g in h.guards}
+    h_all: dict[str, list[GuardRef]] = {}
+    for g in h.guards:
+        h_all.setdefault(guard_key(g), []).append(g)
     for bg in (g for g in b.guards if enforcing(g)):
-        hg = h_all.get(guard_key(bg))
-        if hg is not None and bg.on_fail in STRICT_FAIL and hg.on_fail in SOFT_FAIL:
+        same = h_all.get(guard_key(bg), [])
+        hg = next((g for g in same if g.kind == bg.kind), same[0] if same else None)
+        # "Neutered" is about one function body that stopped rejecting; library primitives
+        # (two OAuth2PasswordBearer instances, one with auto_error=False) are distinct guards.
+        neuterable = bg.source != "builtin"
+        if neuterable and hg is not None and bg.on_fail in STRICT_FAIL and hg.on_fail in SOFT_FAIL:
             out.append(
                 Delta(
                     "failure_neutered",
@@ -103,6 +116,8 @@ def endpoint_deltas(b: Endpoint, h: Endpoint) -> list[Delta]:
                 out.append(Delta("guard_removed", h, b, bg, hg, f"{bg.symbol} ({bg.kind})"))
             continue
         w = weakened(bg.condition, hg.condition)
+        if w and moved_into_new_guard(b, h, bg):
+            w = False  # the dropped clause now lives in a new guard of the same kind
         if w:
             out.append(
                 Delta(

@@ -92,6 +92,8 @@ class Function(BaseModel):
     owner_compare: bool = False
     sinks: list[SinkInfo] = Field(default_factory=list)
     mass_assign: list[MassAssign] = Field(default_factory=list)
+    return_depends: list[Value] = Field(default_factory=list)  # `return Depends(<expr>)` args
+    super_init: Value | None = None  # `super().__init__(...)` call (router subclasses)
     first_check_line: int | None = None  # first raise of 401/403 (for dominates_sink)
 
 

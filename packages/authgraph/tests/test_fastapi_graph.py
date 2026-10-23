@@ -341,3 +341,93 @@ def test_redefined_handler_names_keep_both_routes(tmp_path: Path) -> None:
         },
     )
     assert set(eps) == {"GET /a", "GET /b"}
+
+
+def test_router_subclass_and_class_based_view(tmp_path: Path) -> None:
+    eps = endpoints(
+        tmp_path,
+        {
+            "deps.py": DEPS,
+            "routers.py": """
+                from fastapi import APIRouter, Depends
+                from deps import get_current_user
+                class UserAPIRouter(APIRouter):
+                    def __init__(self, prefix: str = "", **kwargs):
+                        super().__init__(prefix=prefix, dependencies=[Depends(get_current_user)], **kwargs)
+            """,
+            "base.py": """
+                from fastapi import Depends
+                from deps import get_current_user
+                class BaseUserController:
+                    user: dict = Depends(get_current_user)
+            """,
+            "main.py": """
+                from fastapi import FastAPI, APIRouter
+                from routers import UserAPIRouter
+                from base import BaseUserController
+                users = UserAPIRouter(prefix="/u")
+                plain = APIRouter(prefix="/c")
+                @users.post("/a")
+                def a(): ...
+                class RecipeController(BaseUserController):
+                    @plain.post("/b")
+                    def b(self): ...
+                app = FastAPI()
+                app.include_router(users)
+                app.include_router(plain)
+            """,
+        },
+    )
+    assert eps["POST /u/a"].authn == Verdict.AUTH
+    assert eps["POST /c/b"].authn == Verdict.AUTH
+
+
+def test_factory_returning_depends_of_class_instance(tmp_path: Path) -> None:
+    eps = endpoints(
+        tmp_path,
+        {
+            "perm.py": """
+                from fastapi import Depends, HTTPException
+                class RequirePermission:
+                    def __init__(self, perm): self.perm = perm
+                    def __call__(self, user=None):
+                        if self.perm not in user.permissions:
+                            raise HTTPException(status_code=403)
+                def require(perm):
+                    return Depends(RequirePermission(perm))
+            """,
+            "main.py": """
+                from fastapi import FastAPI
+                from perm import require
+                app = FastAPI()
+                @app.post("/invite", dependencies=[require("invite")])
+                def invite(): ...
+            """,
+        },
+    )
+    assert eps["POST /invite"].authn == Verdict.AUTH
+
+
+def test_403_after_scheme_is_authn_but_after_user_is_authz(tmp_path: Path) -> None:
+    eps = endpoints(
+        tmp_path,
+        {
+            "main.py": """
+                from fastapi import FastAPI, Depends, HTTPException
+                from fastapi.security import OAuth2PasswordBearer
+                scheme = OAuth2PasswordBearer(tokenUrl="t")
+                def get_current_user(token: str = Depends(scheme)):
+                    if not valid(token):
+                        raise HTTPException(status_code=403)
+                def can_invite(user=Depends(get_current_user)):
+                    if not check(user):
+                        raise HTTPException(status_code=403)
+                app = FastAPI()
+                @app.post("/x")
+                def x(u=Depends(can_invite)): ...
+            """,
+        },
+    )
+    kinds = {g.symbol.split(".")[-1]: g.kind for g in eps["POST /x"].guards}
+    assert kinds["get_current_user"] == GuardKind.AUTHN
+    assert kinds["can_invite"] == GuardKind.AUTHZ_ROLE

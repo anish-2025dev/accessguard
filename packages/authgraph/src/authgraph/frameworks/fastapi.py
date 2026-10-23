@@ -169,13 +169,51 @@ class FastAPIGraph:
                     continue
                 key = (path, a.scope, a.target)
                 prefix_v = a.value.kwargs.get("prefix")
+                deps = self._dep_list(a.value.kwargs.get("dependencies"), path, a.scope, True)
+                deps += self._subclass_deps(self.ix.resolve(path, a.scope, a.value.dotted), a.line)
                 self.nodes[key] = Node(
                     key=key,
                     kind=kind,
                     prefix=self.ix.eval_str(path, a.scope, prefix_v) if prefix_v else "",
-                    deps=self._dep_list(a.value.kwargs.get("dependencies"), path, a.scope, True),
+                    deps=deps,
                     loc=self._loc(path, a.line),
                 )
+
+    def _subclass_deps(self, t: Target, line: int, depth: int = 0) -> list[DepUse]:
+        """Router subclasses: ``super().__init__(dependencies=[...])`` in ``__init__``."""
+        info = self.ix.klass(t)
+        if info is None or depth > 4:
+            return []
+        out: list[DepUse] = []
+        init = self.ix.function(Target("function", t.path, f"{t.name}.__init__"))
+        if init is not None and init.super_init is not None:
+            dv = init.super_init.kwargs.get("dependencies")
+            out += self._dep_list(dv, t.path, init.qualname, True)
+        for b in info.bases:
+            out += self._subclass_deps(self.ix.resolve(t.path, "", b), line, depth + 1)
+        return out
+
+    def class_view_deps(self, handler: Target, depth: int = 0) -> list[DepUse]:
+        """Class-based views (fastapi-utils ``cbv``, mealie ``@controller``): class attributes
+        ``user: User = Depends(get_current_user)`` are dependencies of every method endpoint."""
+        cls_name = handler.name.rpartition(".")[0]
+        cls = Target("class", handler.path, cls_name)
+        return self._class_attr_deps(cls, depth) if cls_name else []
+
+    def _class_attr_deps(self, cls: Target, depth: int) -> list[DepUse]:
+        info = self.ix.klass(cls)
+        if info is None or depth > 5:
+            return []
+        scope = cls.name.rpartition(".")[0]
+        out: list[DepUse] = []
+        for b in info.bases:
+            out += self._class_attr_deps(self.ix.resolve(cls.path, scope, b), depth + 1)
+        for v in info.fields.values():
+            if v is not None:
+                d = self._dep_from_call(v, cls.path, scope, False)
+                if d is not None:
+                    out.append(d)
+        return out
 
     def node_of(self, t: Target, depth: int = 0) -> NodeKey | None:
         if depth > 6:
@@ -481,13 +519,18 @@ class FastAPIGraph:
         if fn is None:
             return out
         symbol = self.ix.qualified(t)
-        uses_scheme = False
+        uses_scheme = after_authn = False
         for _, d in self.param_deps(fn, t.path):
             sub = self.closure(d, depth + 1)
             out.guards += sub.guards
             out.unresolved += sub.unresolved
             if any(g.source == "builtin" for g in sub.guards):
                 uses_scheme = True
+            if any(
+                g.kind == GuardKind.AUTHN and g.source != "builtin" and self._enforcing(g)
+                for g in sub.guards
+            ):
+                after_authn = True
         helpers = [
             h
             for c in fn.calls
@@ -495,7 +538,7 @@ class FastAPIGraph:
             and (h := self.ix.function(ht)) is not None
             and h is not fn
         ]
-        info = classify(fn, helpers, uses_scheme)
+        info = classify(fn, helpers, uses_scheme and not after_authn, after_authn)
         decl = self.config.guard_decl(symbol)
         if info is not None or decl is not None:
             out.guards.insert(
@@ -571,6 +614,16 @@ class FastAPIGraph:
             return Closure(unresolved=[t.name] if AUTHISH_EXTERNAL.search(t.name) else [])
         if t.kind == "function":
             fn = self.ix.function(t)
+            if call is not None and fn is not None and fn.return_depends:
+                # def require(perm): return Depends(RequirePermission(perm))
+                out = Closure()
+                for v in fn.return_depends:
+                    c = self.closure(
+                        DepUse(v, t.path, fn.qualname, self._loc(t.path, fn.line)), depth + 1
+                    )
+                    out.guards += c.guards
+                    out.unresolved += c.unresolved
+                return out
             if call is not None and fn is not None and fn.return_names:
                 factory = self._factory_closure(t, fn, call, depth)
                 if factory is not None:
@@ -753,6 +806,10 @@ class FastAPIGraph:
                         }
                     )
                 )
+            unresolved += c.unresolved
+        for d in self.class_view_deps(r.handler):
+            c = self.closure(d)
+            guards += [g.model_copy(update={"dominates_sink": True}) for g in c.guards]
             unresolved += c.unresolved
         for pname, d in self.param_deps(fn, r.file):
             c = self.closure(d)

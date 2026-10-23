@@ -126,7 +126,9 @@ def auth_raises(fn: Function) -> list[RaiseInfo]:
     return out
 
 
-def classify(fn: Function, helpers: list[Function], uses_scheme: bool) -> GuardInfo | None:
+def classify(
+    fn: Function, helpers: list[Function], uses_scheme: bool, after_authn: bool = False
+) -> GuardInfo | None:
     """Score one dependency function. ``helpers`` are local functions it calls (depth 1)."""
     raises = auth_raises(fn)
     helper_raise = any(r.status in (401, 403) for h in helpers for r in h.raises)
@@ -145,6 +147,9 @@ def classify(fn: Function, helpers: list[Function], uses_scheme: bool) -> GuardI
             return GuardInfo(GuardKind.AUTHZ_OWNER, 0.85, "raise", cond)
         if _ROLE_ATOM.search(conds) or (403 in statuses and fn.role_refs):
             return GuardInfo(GuardKind.AUTHZ_ROLE, 0.9, "raise", cond)
+        if statuses == {403} and after_authn:
+            # Only "forbidden", and it runs after authentication: a permission check.
+            return GuardInfo(GuardKind.AUTHZ_ROLE, 0.85, "raise", cond)
         if 401 in statuses or auth_feature or helper_raise:
             conf = 0.9 if (auth_feature or named or helper_raise) else 0.75
             return GuardInfo(GuardKind.AUTHN, conf, "raise", cond)

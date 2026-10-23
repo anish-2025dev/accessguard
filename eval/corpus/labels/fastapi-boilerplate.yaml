@@ -12,6 +12,10 @@
   actionable: false
   label: tp
   note: GET /user list without auth in initial scaffold (advisory)
+41ae6745885afab5ce63877a2a03dc021e07bfa821e6212015a806b9dda00fae:
+  actionable: false
+  label: tp
+  note: GET /deleted_users without auth (advisory); later removed
 4b5c5362547300068bfef5dac1921db439d63a96d765e6b8740d2646b9adbb24:
   actionable: false
   label: tp

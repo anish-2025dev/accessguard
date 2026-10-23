@@ -324,6 +324,9 @@ class _FunctionVisitor:
             elif isinstance(st.value, ast.Call) and (callee := _callee(st.value)):
                 self.fn.return_calls.append(callee)
                 arg = st.value.args[0] if st.value.args else None
+                is_dep = callee.split(".")[-1] in ("Depends", "Security")
+                if is_dep and arg is not None and (v := to_value(arg)) is not None:
+                    self.fn.return_depends.append(v)
                 if callee.split(".")[-1] in ("Depends", "Security") and isinstance(arg, ast.Name):
                     self.fn.return_names.append(arg.id)  # return Depends(checker)
                     self.fn.return_conds[arg.id] = _conj(conds)
@@ -392,6 +395,14 @@ class _FunctionVisitor:
                 inner_chain.add(id(part))
         for node in ast.walk(self.node):
             if isinstance(node, ast.Call):
+                f = node.func
+                if (
+                    isinstance(f, ast.Attribute)
+                    and f.attr == "__init__"
+                    and isinstance(f.value, ast.Call)
+                    and call_dotted(f.value) == "super"
+                ):
+                    self.fn.super_init = to_value(node)
                 d = call_dotted(node) or ""
                 if d:
                     self.calls.append(d)
