@@ -85,7 +85,9 @@ service cloud.firestore {
 def test_realtime_database_rules() -> None:
     doc = {"rules": {"chat": {".read": True, "$uid": {".write": "auth.uid === $uid"}}}}
     got = analyze_rtdb("database.rules.json", json.dumps(doc, indent=1))
-    assert [(e.resource, e.reason, e.loc.line) for e in got] == [("database.rules.json:/chat", "firebase_open", 4)]
+    assert [(e.resource, e.reason, e.loc.line) for e in got] == [
+        ("database.rules.json:/chat", "firebase_open", 4)
+    ]
 
 
 def _jwt(role: str) -> str:
