@@ -1,0 +1,71 @@
+# PLAN.md §4 "CI/CD pipeline": lint, types, tests, and the eval regression gate on every PR.
+# Action inputs verified against each action's action.yml at the pinned commit:
+#   https://github.com/actions/checkout/blob/3d3c42e5aac5ba805825da76410c181273ba90b1/action.yml
+#   https://github.com/astral-sh/setup-uv/blob/07a047e608db84b3d8c06cd9a7c7dcc9c355c18e/action.yml
+#   https://github.com/actions/upload-artifact/blob/cf430e030ddbb5b0abf93d22962f4752f3646cd9/action.yml
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --locked
+      - name: ruff
+        run: make lint
+      - name: mypy --strict (authgraph)
+        run: make typecheck
+      - name: pytest
+        run: make test
+
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --locked
+      # Regression gate: fail if any rule's precision or recall drops versus the base branch.
+      - name: Baseline report from the base branch
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git worktree add "$RUNNER_TEMP/base" "origin/$BASE_REF"
+          if [ -f "$RUNNER_TEMP/base/eval/harness.py" ]; then
+            (cd "$RUNNER_TEMP/base" && uv run python eval/harness.py --out "$RUNNER_TEMP/baseline")
+          else
+            echo "base branch has no eval harness yet; skipping regression baseline"
+          fi
+      # Phase 0: no rules exist yet, so only the no-regression check runs. Phase 1 switches this
+      # to `make eval-gates` (absolute thresholds from eval/gates.yaml).
+      - name: Eval (no regression vs base)
+        run: make eval BASELINE="$RUNNER_TEMP/baseline/report.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: eval-report
+          path: eval/reports/

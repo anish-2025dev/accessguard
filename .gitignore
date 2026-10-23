@@ -28,3 +28,5 @@ eval/.cache/
 .DS_Store
 .idea/
 .vscode/
+eval/corpus/checkouts/
+deploy/github-app/register-*.html

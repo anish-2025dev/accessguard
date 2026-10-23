@@ -1,0 +1,27 @@
+{
+  "name": "accessguard",
+  "url": "https://github.com/anish-2025dev/accessguard",
+  "description": "Reports access-control regressions in pull requests: who can access what, and did this change make it worse?",
+  "request_oauth_on_install": true,
+  "default_permissions": {
+    "contents": "read",
+    "pull_requests": "write",
+    "checks": "write",
+    "issues": "write",
+    "metadata": "read"
+  },
+  "default_events": [
+    "pull_request",
+    "push",
+    "issue_comment",
+    "check_run"
+  ],
+  "public": true,
+  "hook_attributes": {
+    "url": "https://api.REPLACE-WITH-DOMAIN/webhooks/github"
+  },
+  "redirect_url": "https://api.REPLACE-WITH-DOMAIN/manifest/redirect",
+  "callback_urls": [
+    "https://api.REPLACE-WITH-DOMAIN/callback"
+  ]
+}

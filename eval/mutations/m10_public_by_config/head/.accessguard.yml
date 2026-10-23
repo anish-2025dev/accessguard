@@ -1,0 +1,6 @@
+version: 1
+public_routes:
+  - route: "GET /health"
+    reason: liveness probe
+  - route: "GET /status"
+    reason: version probe
