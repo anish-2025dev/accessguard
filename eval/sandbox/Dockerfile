@@ -8,6 +8,11 @@ FROM python:${PYTHON_VERSION}-slim
 
 ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1 PYTHONDONTWRITEBYTECODE=1
 
+# System build dependencies some repos need for their wheels (e.g. python-ldap), space-separated.
+ARG APT_PACKAGES=""
+RUN if [ -n "$APT_PACKAGES" ]; then apt-get update -q && \
+    apt-get install -yq --no-install-recommends $APT_PACKAGES && rm -rf /var/lib/apt/lists/*; fi
+
 # Optional corporate/proxy CA for the build stage only (route_truth.py --ca-bundle); empty otherwise.
 COPY build-ca.crt /build-ca.crt
 ARG HTTPS_PROXY=""
