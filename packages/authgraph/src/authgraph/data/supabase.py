@@ -26,6 +26,7 @@ from __future__ import annotations
 import posixpath
 import re
 import tomllib
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 from pglast import ast as pg
@@ -429,6 +430,30 @@ def _requires_principal(atom: object) -> bool:
     return False
 
 
+def readable_by(role: str, policies: Iterable[tuple[str, list[str], bool, str | None]]) -> bool:
+    """Some permissive SELECT/ALL policy lets ``role`` read every row (``using (true)``).
+
+    ``policies`` are ``(cmd, roles, permissive, using)``; ``public`` covers every role."""
+    return any(
+        cmd in {"select", "all"}
+        and permissive
+        and (role in roles or "public" in roles)
+        and is_true(using)
+        for cmd, roles, permissive, using in policies
+    )
+
+
+def write_reason(cmd: str, role: str, readable: bool) -> str:
+    """``write_only_insert`` for an insert-anything policy on rows ``role`` cannot read back (a
+    contact form or order drop box: spam, not a data leak); ``policy_true_write`` otherwise."""
+    return "write_only_insert" if cmd == "insert" and not readable else "policy_true_write"
+
+
+def _write_reason(cmd: str, role: str, policies: Iterable[Policy]) -> str:
+    rows = [(p.cmd, p.roles, p.permissive, p.using) for p in policies]
+    return write_reason(cmd, role, readable_by(role, rows))
+
+
 def is_true(expr: str | None) -> bool:
     return expr is not None and expr.strip().strip("()").strip().lower() == "true"
 
@@ -472,7 +497,7 @@ def exposures(cat: Catalog, exposed: tuple[str, ...]) -> list[DataExposure]:
                                 resource=t.key,
                                 role=role,
                                 ops=set(ops),
-                                reason="policy_true_write",
+                                reason=_write_reason(p.cmd, role, t.policies.values()),
                                 loc=p.loc,
                                 detail=f'policy "{p.name}" allows every row',
                             )

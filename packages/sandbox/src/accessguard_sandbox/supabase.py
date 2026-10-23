@@ -42,6 +42,8 @@ from authgraph.data.supabase import (
     fails_open,
     is_true,
     migration_files,
+    readable_by,
+    write_reason,
 )
 from authgraph.facts.models import DataExposure, Loc
 from authgraph.workspace.tree import SourceTree
@@ -280,12 +282,14 @@ class PostgresSandbox:
             if row is None:
                 out.append(Probe(resource, role, op, "inconclusive", "no value for a column"))
                 continue
-            claims = json.dumps({"sub": str(uuid.uuid4()), "role": role})
+            # PUBLIC is a pseudo-role (SET ROLE public fails with 22023); anon is its weakest member
+            as_who = "anon" if role == "public" else role
+            claims = json.dumps({"sub": str(uuid.uuid4()), "role": as_who})
             as_role = (
-                f"set local role {role};\n"
+                f"set local role {as_who};\n"
                 f"select set_config('request.jwt.claims', {_lit(claims)}, true),"
                 f" set_config('request.jwt.claim.sub', {_lit(json.loads(claims)['sub'])}, true),"
-                f" set_config('request.jwt.claim.role', {_lit(role)}, true);\n"
+                f" set_config('request.jwt.claim.role', {_lit(as_who)}, true);\n"
             )
             if op == "insert":
                 sql = "begin;\nset local session_replication_role = replica;\n" + as_role
@@ -396,12 +400,17 @@ def catalog_exposures(
         opens = is_true(check) or (cmd in {"update", "delete", "all"} and is_true(using))
         resource = f"{p['schema']}.{p['name']}"
         if cmd in {"insert", "update", "delete", "all"} and opens:
+            same = [
+                (q["cmd"].lower(), q["roles"], q["permissive"] == "PERMISSIVE", q["qual"])
+                for q in cat["policies"]
+                if (q["schema"], q["name"]) == (p["schema"], p["name"])
+            ]
             out += [
                 DataExposure(
                     resource=resource,
                     role=x,
                     ops=ops & ALL_PRIVS,
-                    reason="policy_true_write",
+                    reason=write_reason(cmd, x, readable_by(x, same)),
                     loc=loc,
                 )
                 for x in roles
