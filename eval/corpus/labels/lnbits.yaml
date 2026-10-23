@@ -1,0 +1,62 @@
+# Hand labels for eval/tools/replay_history.py (see its docstring).
+0b0efab189d5b6033cba6f2d05d2eaf7b82dd5fabb05c8f368976efe53ed6638:
+  actionable: false
+  label: tp
+  note: optional_user_id; falls back to public assets only (by design)
+0d1bc3118ece28a99f4af924311f96595bec1af8383eb00116f1a87f6add57cb:
+  actionable: false
+  label: tp
+  note: check_admin replaced by check_user_exists with per-user scoping (#3174, intended)
+15eddc64d8e3d00028101f158cf63b565c6ed5b709744d36f119af169d6fed7c:
+  actionable: false
+  label: tp
+  note: admin-only payments page opened to all users (#3174, intended); check_admin scored as owner, kind
+    label imprecise
+17dde2f4dc30f5ea24592289277731c0d06d6f8bc00ba2db344542dc7ffea48c:
+  actionable: false
+  label: tp
+  note: 'commit title: make blockexplorer page public (#4124)'
+1da41a3200e019efca5011bc2c47f948f453fa8aa7b35f617ee4a175aa5779fb:
+  actionable: false
+  label: tp
+  note: error page is public by design
+3d9369850c941fcbd9491077011e376d00a87d08b274162b42925a15a1361ef3:
+  actionable: false
+  label: tp
+  note: 2FA challenge page is shown before login by design
+4981d51142a8a11d0955bd5f16c2ea6aa58c76e3483bc99b1d7cacb7bc7f2921:
+  actionable: false
+  label: tp
+  note: optional_user_id; falls back to public assets only (by design)
+538a66ba282d3a055577cd33b2bcba522a5accf3108db1bdf2ef5eea2c3157a2:
+  actionable: false
+  label: tp
+  note: LNURL callback must be public (LUD-06)
+5b79dfedb3d0dc5be4d34e07e1b373b73b756215ed636e31572acd08b1a8c965:
+  actionable: false
+  label: tp
+  note: wallet ownership check moved out of the page into the API when the page became an SPA shell
+5d2672c7c5ea034897306060cc1bdcb704e233f09d1b0f48b7be0b006e25c357:
+  actionable: false
+  label: tp
+  note: optional_user_id; falls back to public assets only (by design)
+85082336814cbaf7a267ed93d1ad8cdd3ece5e3379fef871b3dd52cfaa467402:
+  actionable: false
+  label: tp
+  note: check_admin replaced by check_user_exists with per-user scoping (#3174, intended)
+884e2913bb5a044992bfe51a7590bf30abca632d47f77999797ee1f1bdc9953b:
+  actionable: false
+  label: tp
+  note: check_admin replaced by check_user_exists; handler scopes non-admins to own wallets (#3174, intended)
+8b7b8ea6b00b1eeb1f07887a0ad79cb4987fa98a35c2d706bf0be8d2d154f160:
+  actionable: false
+  label: tp
+  note: 'commit title: make blockexplorer page public (#4124)'
+ac7eedabfcd5a8eb0eda1c4a9feebe5d6ef17bd1abf335d221dd16c18572be64:
+  actionable: false
+  label: tp
+  note: LNURL-pay well-known endpoint must be public (LUD-16)
+f915efd34e605ae94a01cb4c521ff1e5b941d01e8d6d07468c3af585e66a369b:
+  actionable: false
+  label: tp
+  note: QR code generator is public by design
