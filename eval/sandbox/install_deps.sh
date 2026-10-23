@@ -32,6 +32,20 @@ for lock in "$dir/uv.lock" /src/uv.lock; do
   break
 done
 
+if [ "$found" -eq 0 ] && [ -f "$dir/poetry.lock" ]; then
+  # Exact pins from poetry.lock (main category / main group only).
+  python - "$dir/poetry.lock" > /tmp/poetry-reqs.txt <<'PY'
+import sys, tomllib
+lock = tomllib.load(open(sys.argv[1], "rb"))
+for pkg in lock.get("package", []):
+    groups = pkg.get("groups") or [pkg.get("category", "main")]
+    if "main" in groups:
+        print(f"{pkg['name']}=={pkg['version']}")
+PY
+  install_list /tmp/poetry-reqs.txt
+  found=1
+fi
+
 if [ "$found" -eq 0 ]; then
   for req in "$dir"/requirements.txt "$dir"/requirements/*.txt "$dir"/requirements-*.txt; do
     [ -f "$req" ] || continue

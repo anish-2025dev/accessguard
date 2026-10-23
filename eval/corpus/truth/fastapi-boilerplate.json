@@ -1,16 +1,231 @@
 {
-  "app": null,
-  "routes": [],
-  "errors": [
+  "app": "backend/src/interfaces/main.py:app",
+  "routes": [
     {
-      "app": "backend/src/interfaces/main.py:app",
-      "error": "Traceback (most recent call last):\n  File \"/dump_routes.py\", line 134, in dump\n    app = load(root, cand)\n          ^^^^^^^^^^^^^^^^\n  File \"/dump_routes.py\", line 95, in load\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 999, in exec_module\nTypeError: FastAPI.__init__() got an unexpected keyword argument 'openapi_prefix'\n"
+      "method": "GET",
+      "path": "/admin/",
+      "kind": "Route"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/login",
+      "kind": "Route"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/login",
+      "kind": "Route"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/logout",
+      "kind": "Route"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/{identity}/ajax/lookup",
+      "kind": "Route"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/{identity}/create",
+      "kind": "Route"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/{identity}/create",
+      "kind": "Route"
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/{identity}/delete",
+      "kind": "Route"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/{identity}/details/{pk:path}",
+      "kind": "Route"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/{identity}/edit/{pk:path}",
+      "kind": "Route"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/{identity}/edit/{pk:path}",
+      "kind": "Route"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/{identity}/export/{export_type}",
+      "kind": "Route"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/{identity}/list",
+      "kind": "Route"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/api-keys/",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/api-keys/",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/api-keys/summary/user",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/api-keys/{key_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/api-keys/{key_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/api-keys/{key_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/api-keys/{key_id}/analytics",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/api-keys/{key_id}/usage",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/check-auth",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/logout-all",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/refresh-csrf",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/rate-limits/",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/rate-limits/{name}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/rate-limits/{name}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/rate-limits/{name}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tiers/",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tiers/{name}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/users/",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/active-and-inactive/{username}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/users/db/{username}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/me",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/users/{username}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/{username}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/users/{username}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/{username}/rate-limits",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/{username}/tier",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/users/{username}/tier",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "kind": "APIRoute"
     }
   ],
+  "errors": [],
   "candidates": [
     "backend/src/interfaces/main.py:app"
   ],
-  "install_log": "ING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.\nWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.\nWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.\nWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.\nWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.\nWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.\nWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.\nWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.\nWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.\nWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.\nWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.\n",
   "name": "fastapi-boilerplate",
   "ref": "4deb9c45f4298d4a84f005126f6ee8ccd823acf8"
 }

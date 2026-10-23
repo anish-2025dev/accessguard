@@ -96,6 +96,17 @@ def load(root: Path, target: str) -> Any:
     return getattr(module, var)
 
 
+def run_lifespan(app: Any, timeout: float = 60) -> None:
+    """Enter and exit the app's lifespan once (inside the sandbox: no network)."""
+    import asyncio
+
+    async def go() -> None:
+        async with app.router.lifespan_context(app):
+            pass
+
+    asyncio.run(asyncio.wait_for(go(), timeout))
+
+
 def walk(routes: list[Any], prefix: str = "") -> list[dict[str, str]]:
     out: list[dict[str, str]] = []
     for rt in routes:
@@ -133,6 +144,10 @@ def dump(root: Path, target: str) -> dict[str, Any]:
             with contextlib.redirect_stdout(sys.stderr):  # apps that print/log at import time
                 app = load(root, cand)
             routes = [r for r in walk(list(app.routes)) if r["path"] not in FRAMEWORK_DOC_PATHS]
+            if not routes:  # apps that register routers in their startup lifespan (lnbits)
+                with contextlib.redirect_stdout(sys.stderr):
+                    run_lifespan(app)
+                routes = [r for r in walk(list(app.routes)) if r["path"] not in FRAMEWORK_DOC_PATHS]
         except BaseException:
             best["errors"].append({"app": cand, "error": traceback.format_exc(limit=3)})
             continue

@@ -36,6 +36,7 @@ ROUTER_METHODS = frozenset(
         "host",
     }
 )
+HTTP_VERBS = frozenset({"get", "post", "put", "patch", "delete", "options", "head", "trace"})
 ROLE_ATTRS = frozenset(
     {
         "role",
@@ -596,7 +597,39 @@ class Summarizer(ast.NodeVisitor):
                 )
             )
 
+    def _manual_decorator(self, call: ast.expr, line: int) -> None:
+        """``router.post("/x", ...)(handler)``: a decorator applied by hand is a route."""
+        if not (
+            isinstance(call, ast.Call)
+            and len(call.args) == 1
+            and isinstance(call.func, ast.Call)
+            and isinstance(call.func.func, ast.Attribute)
+            and call.func.func.attr in HTTP_VERBS
+        ):
+            return
+        recv = dotted(call.func.func.value)
+        handler = to_value(call.args[0])
+        if recv is None or handler is None or handler.kind != "name":
+            return
+        deco = call.func
+        path = to_value(deco.args[0]) if deco.args else None
+        kwargs = {k.arg: v for k in deco.keywords if k.arg and (v := to_value(k.value)) is not None}
+        kwargs["methods"] = Value(
+            kind="list", items=[Value(kind="const", const=call.func.func.attr.upper())]
+        )
+        self.s.method_calls.append(
+            MethodCall(
+                scope=self.qual,
+                receiver=recv,
+                method="add_api_route",
+                args=[path or Value(kind="const", const=""), handler],
+                kwargs=kwargs,
+                line=line,
+            )
+        )
+
     def visit_Assign(self, node: ast.Assign) -> None:
+        self._manual_decorator(node.value, node.lineno)
         value = to_value(node.value)
         for t in node.targets:
             if isinstance(t, ast.Name) and value is not None:
@@ -633,6 +666,7 @@ class Summarizer(ast.NodeVisitor):
         call = node.value
         if isinstance(call, ast.Await):
             call = call.value
+        self._manual_decorator(call, node.lineno)
         if isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute):
             recv = dotted(call.func.value)
             if recv and call.func.attr in ROUTER_METHODS:

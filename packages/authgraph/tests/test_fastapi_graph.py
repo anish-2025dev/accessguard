@@ -431,3 +431,21 @@ def test_403_after_scheme_is_authn_but_after_user_is_authz(tmp_path: Path) -> No
     kinds = {g.symbol.split(".")[-1]: g.kind for g in eps["POST /x"].guards}
     assert kinds["get_current_user"] == GuardKind.AUTHN
     assert kinds["can_invite"] == GuardKind.AUTHZ_ROLE
+
+
+def test_decorator_applied_by_hand(tmp_path: Path) -> None:
+    eps = endpoints(
+        tmp_path,
+        {
+            "main.py": """
+                from fastapi import FastAPI, APIRouter
+                router = APIRouter()
+                def register_user(): ...
+                if True:
+                    register_user = router.post("/register")(register_user)
+                app = FastAPI()
+                app.include_router(router, prefix="/auth")
+            """,
+        },
+    )
+    assert set(eps) == {"POST /auth/register"}

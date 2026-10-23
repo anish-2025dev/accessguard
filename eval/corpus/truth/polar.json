@@ -4,7 +4,7 @@
   "errors": [
     {
       "app": "server/polar/app.py:app",
-      "error": "Traceback (most recent call last):\n  File \"/dump_routes.py\", line 134, in dump\n    app = load(root, cand)\n  File \"/dump_routes.py\", line 95, in load\n    spec.loader.exec_module(module)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^\n  File \"<frozen importlib._bootstrap_external>\", line 763, in exec_module\npydantic_core._pydantic_core.ValidationError: 1 validation error for Settings\nEMAIL_RENDERER_BINARY_PATH\n  Value error, \n        The provided email renderer binary path /src/server/emails/bin/react-email-pkg is not a valid file path\n        or does not exist.\n\n        If you're in local development, you should build the email renderer binary\n        by running the following command:\n\n        uv run task emails\n\n         [type=value_error, input_value=PosixPath('/src/server/em...ls/bin/react-email-pkg'), input_type=PosixPath]\n    For further information visit https://errors.pydantic.dev/2.14/v/value_error\n"
+      "error": "Traceback (most recent call last):\n  File \"/dump_routes.py\", line 134, in dump\n    app = load(root, cand)\n  File \"/dump_routes.py\", line 95, in load\n    spec.loader.exec_module(module)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^\n  File \"<frozen importlib._bootstrap_external>\", line 763, in exec_module\nModuleNotFoundError: No module named 'dramatiq'\n"
     }
   ],
   "candidates": [

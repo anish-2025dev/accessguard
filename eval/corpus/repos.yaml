@@ -4,7 +4,7 @@
 # Optional per repo: `python` (sandbox interpreter, default 3.12), `env` (dummy settings needed
 # at import time; never real secrets), `workdir` (relative to the repo root),
 # `mkdirs` / `touch` (directories / files the app asserts exist at import time),
-# `install_self` (pip install the project itself, for apps that read their own metadata).
+# `apt` (system build packages), `install_self` (pip install the project itself, for apps that read their own metadata).
 # Fetch with: python eval/tools/fetch_corpus.py   (clones into eval/corpus/checkouts, gitignored)
 
 route_ground_truth:          # layer 1: FastAPI route recall
@@ -38,6 +38,7 @@ route_ground_truth:          # layer 1: FastAPI route recall
     app: mealie/app.py:app
     python: "3.14"
     env: {DATA_DIR: /tmp/mealie, PRODUCTION: "true"}
+    apt: [build-essential, libldap2-dev, libsasl2-dev]
   - name: lnbits
     url: https://github.com/lnbits/lnbits
     ref: 04b37f0d761222561bc8606cfe7edc86cabcce35
