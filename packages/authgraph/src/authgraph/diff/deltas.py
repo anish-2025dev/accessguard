@@ -79,6 +79,15 @@ def _covers(head: Endpoint, removed: GuardRef) -> bool:
     return any(g.kind == removed.kind for g in h_enf)
 
 
+def _role_gate_holds(head: Endpoint) -> bool:
+    """A strict role check still runs after authn, so a neutered authn does not open the route.
+    Owner checks are not counted: a fallback principal id can still match a resource owner."""
+    return any(
+        g.kind == GuardKind.AUTHZ_ROLE and enforcing(g) and g.on_fail in STRICT_FAIL
+        for g in head.guards
+    )
+
+
 def moved_into_new_guard(b: Endpoint, h: Endpoint, bg: GuardRef) -> bool:
     base_keys = {guard_key(g) for g in b.guards}
     return any(
@@ -102,6 +111,8 @@ def endpoint_deltas(b: Endpoint, h: Endpoint) -> list[Delta]:
         # (two OAuth2PasswordBearer instances, one with auto_error=False) are distinct guards.
         neuterable = bg.source != "builtin"
         if neuterable and hg is not None and bg.on_fail in STRICT_FAIL and hg.on_fail in SOFT_FAIL:
+            if bg.kind == GuardKind.AUTHN and _role_gate_holds(h):
+                continue  # the fallback principal still has to pass an intact role check
             out.append(
                 Delta(
                     "failure_neutered",
