@@ -11,7 +11,7 @@ Manifests: `deploy/github-app/manifest.dev.json`, `deploy/github-app/manifest.pr
 | --- | --- | --- |
 | Permissions | `contents: read`, `pull_requests: write`, `checks: write`, `issues: write`, `metadata: read` | PLAN.md §5 security model |
 | Events | `pull_request`, `push`, `issue_comment`, `check_run` (`installation` and `installation_repositories` are delivered to every App automatically) | [webhook events](https://docs.github.com/en/webhooks/webhook-events-and-payloads) |
-| OAuth on install | `request_oauth_on_install: true` (install + sign-in in one flow, FR-1.1) | [manifest parameters](https://docs.github.com/en/apps/sharing-github-apps/registering-a-github-app-from-a-manifest#github-app-manifest-parameters) |
+| OAuth on install | `request_oauth_on_install: false`, `setup_url: /connect`: after installing, users sign in through `/connect`, which carries our own state + PKCE (ADR 010) | [manifest parameters](https://docs.github.com/en/apps/sharing-github-apps/registering-a-github-app-from-a-manifest#github-app-manifest-parameters) |
 
 Phase 4 (runtime verification) will add `deployment_status` / `status` events with
 `deployments: read` and `statuses: read`; that change gets its own ADR and manifest diff.

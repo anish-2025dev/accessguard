@@ -1,0 +1,39 @@
+# Local development (PLAN.md §4 environments). Webhooks reach the api through smee.io:
+#   npx smee-client --url https://smee.io/<channel> --target http://localhost:8000/webhooks/github
+# Secrets come from .env.dev written by deploy/github-app/register.py (never committed).
+services:
+  postgres:
+    image: postgres:16
+    environment: {POSTGRES_USER: accessguard, POSTGRES_PASSWORD: accessguard, POSTGRES_DB: accessguard}
+    ports: ["5432:5432"]
+    healthcheck: {test: ["CMD", "pg_isready", "-U", "accessguard"], interval: 2s, retries: 30}
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
+  migrate:
+    build: {context: .., dockerfile: deploy/Dockerfile}
+    command: ["alembic", "upgrade", "head"]
+    environment: &env
+      DATABASE_URL: postgresql+asyncpg://accessguard:accessguard@postgres/accessguard
+      REDIS_URL: redis://redis:6379/0
+      PUBLIC_URL: http://localhost:8000
+    env_file: [../.env.dev]
+    depends_on: {postgres: {condition: service_healthy}}
+  api:
+    build: {context: .., dockerfile: deploy/Dockerfile}
+    environment: *env
+    env_file: [../.env.dev]
+    ports: ["8000:8000"]
+    depends_on: {migrate: {condition: service_completed_successfully}, redis: {condition: service_started}}
+  worker:
+    build: {context: .., dockerfile: deploy/Dockerfile}
+    command: ["arq", "accessguard_app.jobs.worker.HighWorker"]
+    environment: *env
+    env_file: [../.env.dev]
+    depends_on: {migrate: {condition: service_completed_successfully}}
+  worker-low:
+    build: {context: .., dockerfile: deploy/Dockerfile}
+    command: ["arq", "accessguard_app.jobs.worker.LowWorker"]
+    environment: *env
+    env_file: [../.env.dev]
+    depends_on: {migrate: {condition: service_completed_successfully}}
