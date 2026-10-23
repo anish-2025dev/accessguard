@@ -57,7 +57,9 @@ class Table:
     schema: str
     name: str
     loc: Loc
-    rls: bool = False
+    # False after CREATE TABLE; None (unknown) for a table no migration created, e.g. one made
+    # in the dashboard before the migrations start. Unknown is never reported as disabled.
+    rls: bool | None = False
     policies: dict[str, Policy] = field(default_factory=dict)
     # role -> privileges explicitly granted (beyond Supabase's defaults) / revoked
     granted: dict[str, set[str]] = field(default_factory=dict)
@@ -138,7 +140,7 @@ class _Replay:
     def table(self, key: tuple[str, str], loc: Loc) -> Table:
         t = self.cat.tables.get(key)
         if t is None:  # ALTER of a table created outside the migrations (e.g. auth.users)
-            t = Table(key[0], key[1], loc)
+            t = Table(key[0], key[1], loc, rls=None)
             self.cat.tables[key] = t
         return t
 
@@ -229,10 +231,12 @@ class _Replay:
             schemas = {s.sval for s in stmt.objects or () if isinstance(s, pg.String)}
             tables = [t for t in self.cat.tables.values() if t.schema in schemas]
         else:
+            # A grant on a view, or on a relation no migration created, says nothing about RLS:
+            # it must not invent a table (pilot false positive: GRANT SELECT ON a view).
             tables = [
-                self.table(_name(o), Loc(path="", line=0))
+                self.cat.tables[_name(o)]
                 for o in stmt.objects or ()
-                if isinstance(o, pg.RangeVar)
+                if isinstance(o, pg.RangeVar) and _name(o) in self.cat.tables
             ]
         for t in tables:
             for role in roles:
@@ -434,7 +438,7 @@ def exposures(cat: Catalog, exposed: tuple[str, ...]) -> list[DataExposure]:
     for t in cat.tables.values():
         if t.schema not in exposed:
             continue
-        if not t.rls:
+        if t.rls is False:
             for role in API_ROLES:
                 privs = (set(ALL_PRIVS) | t.granted.get(role, set())) - t.revoked.get(role, set())
                 if privs:

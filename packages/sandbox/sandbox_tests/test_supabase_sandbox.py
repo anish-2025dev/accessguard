@@ -15,7 +15,15 @@ from authgraph.facts.models import DataExposure, Loc
 from authgraph.workspace.tree import DirectoryTree
 
 MUTATIONS = Path(__file__).resolve().parents[3] / "eval" / "mutations"
-CASES = sorted(p for p in MUTATIONS.glob("m*_supabase_*") for p in (p / "base", p / "head"))
+# Fixtures whose migrations reference objects created outside them (the dashboard) cannot be
+# replayed in an empty database; the static engine treats those objects as unknown.
+NOT_REPLAYABLE = {"m59_supabase_policy_on_unmigrated_table"}
+CASES = sorted(
+    p
+    for p in MUTATIONS.glob("m*_supabase_*")
+    if p.name not in NOT_REPLAYABLE
+    for p in (p / "base", p / "head")
+)
 
 
 def _docker() -> bool:
