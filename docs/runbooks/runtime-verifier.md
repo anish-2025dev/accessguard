@@ -10,8 +10,11 @@ unless the repository opts in on its base branch, and it never runs repository c
    ```
 2. Give `ACCESSGUARD_VERIFIER_PUBLIC_KEY` to the `api` process only. Give
    `ACCESSGUARD_VERIFIER_PRIVATE_KEY` to the `verifier` process only:
-   - Fly: `fly secrets set` plus a process-scoped secret, or a separate app for the `verifier`
-     process.
+   - Fly: secrets are app-wide, so run the verifier as a **separate Fly app** from the same
+     image, for example `accessguard-verifier`, with command
+     `arq accessguard_app.jobs.worker.VerifyWorker`. Set the private key there with
+     `fly secrets set -a accessguard-verifier ...`. The `verifier` process group in
+     `deploy/fly.toml` is for single-app staging only.
    - Compose: `.env.verifier`, which only the `verifier` service loads.
 3. Start the `verifier` process: `arq accessguard_app.jobs.worker.VerifyWorker`, which reads
    queue `arq:verify`. `ACCESSGUARD_VERIFIER_BUDGET` caps the number of requests per run
