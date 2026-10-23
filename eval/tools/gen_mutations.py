@@ -909,7 +909,9 @@ STAFF = {
         app.include_router(staff.router, prefix="/staff")
     """),
 }
-STAFF_ROUTE = '\n\n@router.post("/broadcast")\ndef broadcast(user=Depends({dep})):\n    return {{}}\n'
+STAFF_ROUTE = (
+    '\n\n@router.post("/broadcast")\ndef broadcast(user=Depends({dep})):\n    return {{}}\n'
+)
 
 case(
     "m33_role_peer_inconsistency",
