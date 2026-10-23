@@ -3,18 +3,19 @@ name = "accessguard-workspace"
 version = "0.0.0"
 description = "AccessGuard monorepo root (not published)"
 requires-python = ">=3.12"
-dependencies = ["authgraph", "accessguard-app", "accessguard-sandbox"]
+dependencies = ["authgraph", "accessguard-app", "accessguard-sandbox", "accessguard-verifier"]
 
 [tool.uv]
 package = false
 
 [tool.uv.workspace]
-members = ["packages/authgraph", "packages/app", "packages/sandbox"]
+members = ["packages/authgraph", "packages/app", "packages/sandbox", "packages/verifier"]
 
 [tool.uv.sources]
 authgraph = { workspace = true }
 accessguard-app = { workspace = true }
 accessguard-sandbox = { workspace = true }
+accessguard-verifier = { workspace = true }
 
 [dependency-groups]
 dev = [
@@ -43,6 +44,7 @@ ignore = ["S101"]  # asserts are fine in tests
 "**/tests/**" = ["S", "E501"]
 "**/app_tests/**" = ["S", "E501"]
 "**/sandbox_tests/**" = ["S", "E501"]
+"**/verifier_tests/**" = ["S", "E501"]
 "packages/sandbox/src/**" = ["S603", "S607"]  # drives the docker CLI with fixed argv
 "eval/**" = ["S603", "S607"]
 "eval/tools/gen_mutations.py" = ["E501"]  # fixture source text
@@ -66,6 +68,7 @@ testpaths = [
     "packages/authgraph/tests",
     "packages/app/app_tests",
     "packages/sandbox/sandbox_tests",
+    "packages/verifier/verifier_tests",
     "eval/tests",
 ]
 asyncio_mode = "auto"
