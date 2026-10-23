@@ -4,4 +4,4 @@ framework: data
 description: "Lets any signed-in user write announcements."
 expected:
   - rule_id: AG-DATA-003
-    key: "firestore:/databases/{database}/documents/announcements/{id}"
+    key: "firestore.rules:/announcements/{id}"

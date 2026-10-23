@@ -1283,7 +1283,7 @@ data_case(
             "allow read, write: if true;",
         )
     ],
-    [("AG-DATA-003", "firestore:/databases/{database}/documents/users/{userId}")],
+    [("AG-DATA-003", "firestore.rules:/users/{userId}")],
 )
 data_case(
     "m51_firebase_new_owner_rule",
@@ -1312,7 +1312,7 @@ data_case(
             "      allow write: if request.auth != null;",
         )
     ],
-    [("AG-DATA-003", "firestore:/databases/{database}/documents/announcements/{id}")],
+    [("AG-DATA-003", "firestore.rules:/announcements/{id}")],
 )
 data_case(
     "m53_service_role_key_in_client",

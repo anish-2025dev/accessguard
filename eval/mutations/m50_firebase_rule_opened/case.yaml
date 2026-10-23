@@ -4,4 +4,4 @@ framework: data
 description: "Opens the users collection to everyone."
 expected:
   - rule_id: AG-DATA-003
-    key: "firestore:/databases/{database}/documents/users/{userId}"
+    key: "firestore.rules:/users/{userId}"

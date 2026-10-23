@@ -55,6 +55,18 @@ def _key(e: DataExposure) -> tuple[str, str, str]:
     return (e.resource, e.role, e.reason)
 
 
+def _merged(exposures: list[DataExposure]) -> dict[tuple[str, str, str], DataExposure]:
+    """One exposure per (resource, role, reason), ops unioned, first location kept."""
+    out: dict[tuple[str, str, str], DataExposure] = {}
+    for e in exposures:
+        k = _key(e)
+        if k in out:
+            out[k] = out[k].model_copy(update={"ops": out[k].ops | e.ops})
+        else:
+            out[k] = e
+    return out
+
+
 def _severity(e: DataExposure, tier: Tier) -> Severity:
     write = bool(e.ops & WRITES)
     if tier == "heuristic":
@@ -73,21 +85,21 @@ class _DataRule:
     def evaluate(
         self, head: FactGraph, base: FactGraph | None, ctx: RuleContext
     ) -> Iterable[Finding]:
-        before = {_key(e): e for e in (base.data_exposures if base else [])}
+        before = _merged(base.data_exposures if base else [])
         # New or widened grants, grouped per (resource, reason): one finding lists every role.
         groups: dict[tuple[str, str], list[tuple[DataExposure, set[str]]]] = {}
-        seen: set[tuple[str, str, str]] = set()
-        for e in head.data_exposures:
+        for key, e in _merged(head.data_exposures).items():
             rule, _ = DATA_RULES.get(e.reason, ("", "advisory"))
-            if rule != self.id or _key(e) in seen:
+            if rule != self.id:
                 continue
-            seen.add(_key(e))
-            old = before.get(_key(e))
+            old = before.get(key)
             new_ops = e.ops - old.ops if old else set(e.ops)
             if new_ops:
                 groups.setdefault((e.resource, e.reason), []).append((e, new_ops))
         for (resource, reason), items in sorted(groups.items()):
             _, tier = DATA_RULES[reason]
+            if reason == "firebase_open" and not any(o & WRITES for _, o in items):
+                tier = "heuristic"  # world-readable content is often intended (catalogs, posts)
             first = items[0][0]
             roles = sorted({e.role for e, _ in items})
             ops = sorted(set().union(*(o for _, o in items)))

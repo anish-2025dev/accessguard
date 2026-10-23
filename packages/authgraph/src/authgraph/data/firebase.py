@@ -124,6 +124,9 @@ class _Parser:
                     cond = re.sub(r"^if\s+", "", cond.strip())
                 if stop is not None and stop.text == ";":
                     self.i += 1
+                if cond is None and re.search(r"\bif\b", ops_text):  # `allow read, write if x;`
+                    ops_text, _, rest = ops_text.partition(" if ")
+                    cond = rest.strip() or None
                 ops = [o.strip() for o in ops_text.replace(" ", "").split(",") if o.strip()]
                 self.rs.allows.append(Allow(path or "/", ops, _norm(cond), tok.line))
             elif tok.text == "function":
@@ -179,15 +182,16 @@ def _classify(cond: str | None, functions: dict[str, str]) -> str | None:
 
 def analyze_rules_file(path: str, text: str) -> list[DataExposure]:
     rs = parse_rules(text)
-    kind = "storage" if "storage" in rs.service else "firestore"
     out: list[DataExposure] = []
     for a in rs.allows:
         reason = _classify(a.condition, rs.functions)
-        if reason is None:
-            continue
+        if reason is None or (reason == "firebase_auth_only" and not is_write(set(a.ops))):
+            continue  # any signed-in user reading app content is the normal case
+        # The rules file is part of the resource: one repository can deploy several projects.
+        match = a.path.removeprefix("/databases/{database}/documents") or "/"
         out.append(
             DataExposure(
-                resource=f"{kind}:{a.path}",
+                resource=f"{path}:{match}",
                 role="anon" if reason == "firebase_open" else "authenticated",
                 ops=set(a.ops),
                 reason=reason,
@@ -226,11 +230,13 @@ def analyze_rtdb(path: str, text: str) -> list[DataExposure]:
                 if v is False or cond is None:
                     continue
                 reason = _classify(_norm(cond), {})
+                if reason == "firebase_auth_only" and k == ".read":
+                    reason = None
                 if reason:
                     op = k[1:]
                     out.append(
                         DataExposure(
-                            resource=f"rtdb:{p or '/'}",
+                            resource=f"{path}:{p or '/'}",
                             role="anon" if reason == "firebase_open" else "authenticated",
                             ops={op},
                             reason=reason,
