@@ -19,7 +19,7 @@ format:
 	$(UV) run ruff check --fix .
 
 typecheck:
-	$(UV) run mypy --strict packages/authgraph
+	$(UV) run mypy --strict packages/authgraph packages/app/src packages/sandbox/src
 
 check: lint typecheck test
 

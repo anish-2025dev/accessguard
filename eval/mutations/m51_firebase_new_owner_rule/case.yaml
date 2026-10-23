@@ -1,0 +1,5 @@
+id: m51_firebase_new_owner_rule
+kind: negative
+framework: data
+description: "Adds an owner-checked orders collection."
+expected: []

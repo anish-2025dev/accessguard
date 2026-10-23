@@ -1,0 +1,7 @@
+id: m55_secret_env_with_public_prefix
+kind: positive
+framework: data
+description: "Reads the service-role key from a NEXT_PUBLIC_ variable, which Next.js inlines into the client bundle."
+expected:
+  - rule_id: AG-SECRET-001
+    key: "src/lib/supabase.ts#secret_env_public_prefix"

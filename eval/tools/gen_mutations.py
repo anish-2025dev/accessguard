@@ -1111,6 +1111,264 @@ case(
 )
 
 
+# ---- Data layer: Supabase, Firebase, client secrets (Phase 3) -------------------------------
+def _fake_jwt(role):
+    import base64
+
+    def b64(d):
+        return base64.urlsafe_b64encode(json.dumps(d).encode()).decode().rstrip("=")
+
+    claims = {"iss": "accessguard-fixture", "ref": "fixture0000000000", "role": role}
+    return f"{b64({'alg': 'HS256', 'typ': 'JWT'})}.{b64(claims)}.ZmFrZS1zaWduYXR1cmUtZm9yLWV2YWw"
+
+
+MIG = "supabase/migrations/20240101000000_init.sql"
+MIG2 = "supabase/migrations/20240201000000_change.sql"
+DATA = {
+    "package.json": d("""
+        {"name": "data-fixture", "private": true, "dependencies": {"@supabase/supabase-js": "^2"}}
+    """),
+    MIG: d("""
+        create table public.profiles (id uuid primary key references auth.users, name text);
+        alter table public.profiles enable row level security;
+        create policy "profiles read own" on public.profiles for select to authenticated
+          using ((select auth.uid()) = id);
+        create policy "profiles update own" on public.profiles for update to authenticated
+          using ((select auth.uid()) = id);
+
+        create table public.posts (id bigint generated always as identity primary key,
+          author uuid not null references auth.users, body text);
+        alter table public.posts enable row level security;
+        create policy "posts are public" on public.posts for select to anon, authenticated
+          using (true);
+        create policy "posts insert own" on public.posts for insert to authenticated
+          with check ((select auth.uid()) = author);
+
+        create view public.post_feed with (security_invoker = true) as
+          select id, body from public.posts;
+    """),
+    "firestore.rules": d("""
+        rules_version = '2';
+        service cloud.firestore {
+          match /databases/{database}/documents {
+            function isOwner(uid) { return request.auth != null && request.auth.uid == uid; }
+            match /users/{userId} {
+              allow read, write: if isOwner(userId);
+            }
+            match /announcements/{id} {
+              allow read: if request.auth != null && request.auth.token.admin == true;
+            }
+          }
+        }
+    """),
+    "src/lib/supabase.ts": d("""
+        import { createClient } from '@supabase/supabase-js';
+
+        export const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        );
+    """),
+    "src/app/api/admin/route.ts": d("""
+        import { createClient } from '@supabase/supabase-js';
+
+        const admin = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+
+        export async function GET() {
+          const { data } = await admin.from('profiles').select('*');
+          return Response.json(data);
+        }
+    """),
+}
+
+
+def data_case(cid, kind, desc, edits, expected):
+    case(cid, kind, desc, edits, expected, base_override=DATA, framework="data")
+
+
+data_case(
+    "m43_supabase_table_without_rls",
+    "positive",
+    "A migration creates public.audit_log without enabling row level security.",
+    [("write", MIG2, "create table public.audit_log (id bigint, actor uuid, action text);\n")],
+    [("AG-DATA-001", "public.audit_log")],
+)
+data_case(
+    "m44_supabase_rls_disabled",
+    "positive",
+    "A migration disables row level security on public.profiles.",
+    [("write", MIG2, "alter table public.profiles disable row level security;\n")],
+    [("AG-DATA-001", "public.profiles")],
+)
+data_case(
+    "m45_supabase_new_table_with_owner_policies",
+    "negative",
+    "A migration adds public.notes with RLS and owner-only policies.",
+    [
+        (
+            "write",
+            MIG2,
+            d("""
+                create table public.notes (id bigint primary key, owner uuid, body text);
+                alter table public.notes enable row level security;
+                create policy "notes own" on public.notes for all to authenticated
+                  using ((select auth.uid()) = owner) with check ((select auth.uid()) = owner);
+            """),
+        )
+    ],
+    [],
+)
+data_case(
+    "m46_supabase_update_policy_true",
+    "positive",
+    "Replaces the owner check of the posts insert policy with true for anon.",
+    [
+        (
+            "write",
+            MIG2,
+            'create policy "anyone edits posts" on public.posts for update to anon using (true);\n',
+        )
+    ],
+    [("AG-DATA-001", "public.posts")],
+)
+data_case(
+    "m47_supabase_null_fail_open",
+    "positive",
+    "The profiles update policy also passes rows whose id is NULL.",
+    [
+        (
+            "write",
+            MIG2,
+            'alter policy "profiles update own" on public.profiles\n'
+            "  using ((select auth.uid()) = id or id is null);\n",
+        )
+    ],
+    [("AG-DATA-002", "public.profiles")],
+)
+data_case(
+    "m48_supabase_view_bypasses_rls",
+    "positive",
+    "Adds a view over public.profiles without security_invoker.",
+    [
+        (
+            "write",
+            MIG2,
+            "create view public.profile_names as select id, name from public.profiles;\n",
+        )
+    ],
+    [("AG-DATA-001", "public.profile_names")],
+)
+data_case(
+    "m49_supabase_view_security_invoker",
+    "negative",
+    "Adds the same view with security_invoker = true.",
+    [
+        (
+            "write",
+            MIG2,
+            "create view public.profile_names with (security_invoker = true) as\n"
+            "  select id, name from public.profiles;\n",
+        )
+    ],
+    [],
+)
+data_case(
+    "m50_firebase_rule_opened",
+    "positive",
+    "Opens the users collection to everyone.",
+    [
+        replace(
+            "firestore.rules",
+            "allow read, write: if isOwner(userId);",
+            "allow read, write: if true;",
+        )
+    ],
+    [("AG-DATA-003", "firestore:/databases/{database}/documents/users/{userId}")],
+)
+data_case(
+    "m51_firebase_new_owner_rule",
+    "negative",
+    "Adds an owner-checked orders collection.",
+    [
+        replace(
+            "firestore.rules",
+            "    match /announcements/{id} {",
+            "    match /orders/{orderId} {\n"
+            "      allow read, write: if isOwner(resource.data.uid);\n"
+            "    }\n    match /announcements/{id} {",
+        )
+    ],
+    [],
+)
+data_case(
+    "m52_firebase_auth_only_write",
+    "positive",
+    "Lets any signed-in user write announcements.",
+    [
+        replace(
+            "firestore.rules",
+            "      allow read: if request.auth != null && request.auth.token.admin == true;",
+            "      allow read: if request.auth != null && request.auth.token.admin == true;\n"
+            "      allow write: if request.auth != null;",
+        )
+    ],
+    [("AG-DATA-003", "firestore:/databases/{database}/documents/announcements/{id}")],
+)
+data_case(
+    "m53_service_role_key_in_client",
+    "positive",
+    "Hard-codes a service-role JWT in the browser Supabase client.",
+    [
+        replace(
+            "src/lib/supabase.ts",
+            "process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,",
+            f"'{_fake_jwt('service_role')}',",
+        )
+    ],
+    [("AG-SECRET-001", "src/lib/supabase.ts#supabase_service_role_jwt")],
+)
+data_case(
+    "m54_service_role_key_on_server",
+    "negative",
+    "Hard-codes the same key in a server route handler (bad practice, but not client exposure).",
+    [
+        replace(
+            "src/app/api/admin/route.ts",
+            "process.env.SUPABASE_SERVICE_ROLE_KEY!",
+            f"'{_fake_jwt('service_role')}'",
+        )
+    ],
+    [],
+)
+data_case(
+    "m55_secret_env_with_public_prefix",
+    "positive",
+    "Reads the service-role key from a NEXT_PUBLIC_ variable, which Next.js inlines into the "
+    "client bundle.",
+    [
+        replace(
+            "src/lib/supabase.ts",
+            "process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,",
+            "process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,",
+        )
+    ],
+    [("AG-SECRET-001", "src/lib/supabase.ts#secret_env_public_prefix")],
+)
+data_case(
+    "m56_anon_key_literal_in_client",
+    "negative",
+    "Hard-codes the anon (publishable) JWT in the client, which is public by design.",
+    [
+        replace(
+            "src/lib/supabase.ts",
+            "process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,",
+            f"'{_fake_jwt('anon')}',",
+        )
+    ],
+    [],
+)
+
+
 def materialize(root: Path, files: dict[str, str]) -> None:
     for rel, content in files.items():
         p = root / rel

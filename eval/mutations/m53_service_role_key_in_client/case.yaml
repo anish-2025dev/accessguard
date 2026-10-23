@@ -1,0 +1,7 @@
+id: m53_service_role_key_in_client
+kind: positive
+framework: data
+description: "Hard-codes a service-role JWT in the browser Supabase client."
+expected:
+  - rule_id: AG-SECRET-001
+    key: "src/lib/supabase.ts#supabase_service_role_jwt"

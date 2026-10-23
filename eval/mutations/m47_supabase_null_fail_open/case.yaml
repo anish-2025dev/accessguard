@@ -1,0 +1,7 @@
+id: m47_supabase_null_fail_open
+kind: positive
+framework: data
+description: "The profiles update policy also passes rows whose id is NULL."
+expected:
+  - rule_id: AG-DATA-002
+    key: "public.profiles"

@@ -5,6 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from authgraph.cache.summaries import SummaryCache, cache_key, default_cache, load
+from authgraph.data.firebase import analyze_firebase
+from authgraph.data.secrets import analyze_secrets
+from authgraph.data.supabase import analyze_supabase
 from authgraph.facts.models import Coverage, FactGraph, Verdict
 from authgraph.frameworks.express import ExpressGraph, uses_express
 from authgraph.frameworks.fastapi import FastAPIGraph
@@ -126,6 +129,9 @@ def analyze(
         resolver = NodeResolver(js, tsconfigs)
         endpoints += ExpressGraph(js, resolver, config).endpoints()
         cov.unresolved_imports += len(resolver.unresolved)
+    data, sql_errors = analyze_supabase(tree)
+    data += analyze_firebase(tree)
+    cov.parse_errors += sql_errors
     cov.endpoints = len(endpoints)
     cov.unknown = sum(e.authn == Verdict.UNKNOWN for e in endpoints)
     cov.unresolved_imports += index.unresolved_imports
@@ -133,6 +139,8 @@ def analyze(
     facts = FactGraph(
         commit_sha=tree.commit_sha,
         endpoints=endpoints,
+        data_exposures=data,
+        secrets=analyze_secrets(tree),
         guard_registry=sorted(registry.values(), key=lambda g: g.symbol),
         coverage=cov,
         config_public_routes=[r.route for r in config.public_routes],

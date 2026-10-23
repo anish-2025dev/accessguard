@@ -1,0 +1,5 @@
+id: m49_supabase_view_security_invoker
+kind: negative
+framework: data
+description: "Adds the same view with security_invoker = true."
+expected: []

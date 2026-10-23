@@ -94,12 +94,13 @@ class Endpoint(_Model):
 
 
 class DataExposure(_Model):  # Supabase / Firebase
-    resource: str
-    role: str
+    resource: str  # "public.notes", "firestore:/users/{uid}"
+    role: str  # who gets access: "anon", "authenticated", "public"
     ops: set[str]
-    reason: str
-    proven: bool = False
+    reason: str  # rls_disabled, policy_true_write, security_definer_view, null_fail_open, ...
+    proven: bool = False  # confirmed by a sandbox probe (Phase 4)
     loc: Loc
+    detail: str = ""  # the policy / rule text that grants it (never secret values)
 
 
 class SecretExposure(_Model):

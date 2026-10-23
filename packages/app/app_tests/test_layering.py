@@ -4,7 +4,7 @@ import ast
 from pathlib import Path
 
 AUTHGRAPH_SRC = Path(__file__).parents[2] / "authgraph" / "src" / "authgraph"
-FORBIDDEN = ("accessguard_app", "accessguard_verifier")
+FORBIDDEN = ("accessguard_app", "accessguard_verifier", "accessguard_sandbox")
 
 
 def test_authgraph_does_not_import_app_or_verifier() -> None:

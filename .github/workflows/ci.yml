@@ -31,7 +31,7 @@ jobs:
       - run: uv sync --locked
       - name: ruff
         run: make lint
-      - name: mypy --strict (authgraph)
+      - name: mypy --strict (authgraph, app, sandbox)
         run: make typecheck
       - name: pytest
         run: make test

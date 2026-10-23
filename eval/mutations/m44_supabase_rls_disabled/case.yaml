@@ -1,0 +1,7 @@
+id: m44_supabase_rls_disabled
+kind: positive
+framework: data
+description: "A migration disables row level security on public.profiles."
+expected:
+  - rule_id: AG-DATA-001
+    key: "public.profiles"
