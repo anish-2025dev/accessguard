@@ -3,7 +3,20 @@ name = "accessguard-app"
 version = "0.0.1"
 description = "AccessGuard GitHub App: webhook intake, jobs and reporter (delivery only)"
 requires-python = ">=3.12"
-dependencies = ["authgraph"]
+dependencies = [
+    "alembic>=1.14",
+    "arq>=0.28",
+    "asyncpg>=0.30",
+    "authgraph",
+    "fastapi>=0.161",
+    "githubkit>=0.16",
+    "httpx>=0.28",
+    "prometheus-client>=0.21",
+    "pyyaml>=6.0",
+    "redis>=5.2",
+    "sqlalchemy[asyncio]>=2.1",
+    "uvicorn>=0.32",
+]
 
 [tool.uv.sources]
 authgraph = { workspace = true }

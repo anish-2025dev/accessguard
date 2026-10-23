@@ -94,6 +94,10 @@ def endpoint_deltas(b: Endpoint, h: Endpoint) -> list[Delta]:
     for bg in (g for g in b.guards if enforcing(g)):
         same = h_all.get(guard_key(bg), [])
         hg = next((g for g in same if g.kind == bg.kind), same[0] if same else None)
+        if bg.source == "scored" and hg is not None and hg.symbol == bg.symbol and enforcing(hg):
+            # Same function still rejects: its kind may shift (role -> owner when a check is
+            # added); only the predicate decides, via the Z3 implication check below.
+            hg = hg.model_copy(update={"kind": bg.kind})
         # "Neutered" is about one function body that stopped rejecting; library primitives
         # (two OAuth2PasswordBearer instances, one with auto_error=False) are distinct guards.
         neuterable = bg.source != "builtin"
