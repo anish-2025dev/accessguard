@@ -56,3 +56,15 @@ def test_too_few_peers_and_unauthenticated_routes_are_not_reported(tmp_path: Pat
     assert _rules(tmp_path / "a", 3, NEW) == []
     unauth = '@router.post("/new")\ndef new():\n    return 1\n'
     assert "AG-ROLE-001" not in _rules(tmp_path / "b", 4, unauth)  # AG-AUTH-001's finding
+
+
+def test_public_models_suppress_idor_candidates() -> None:
+    from authgraph.guards.config import parse_config
+
+    case = (
+        Path(__file__).resolve().parents[3] / "eval" / "mutations" / "m38_idor_delete_by_id_no_user"
+    )
+    base, head = DirectoryTree(case / "base"), DirectoryTree(case / "head")
+    assert [f.rule_id for f in diff_trees(base, head).findings] == ["AG-IDOR-001"]
+    cfg = parse_config(b"version: 1\npublic_models: [Item]\n")
+    assert diff_trees(base, head, base_config=cfg).findings == []

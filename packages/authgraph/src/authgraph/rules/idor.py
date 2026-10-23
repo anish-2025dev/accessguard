@@ -34,19 +34,26 @@ from authgraph.rules.base import RuleContext, finalize, route_evidence
 OBJECT_GUARDS = frozenset({GuardKind.AUTHZ_OWNER, GuardKind.AUTHZ_ROLE})
 
 
-def _exposed_sinks(e: Endpoint) -> list[Sink]:
+def _exposed_sinks(e: Endpoint, public_models: frozenset[str] = frozenset()) -> list[Sink]:
     """Sinks addressed by a request id and not scoped to the principal, when nothing on the
-    endpoint checks object ownership or restricts it to a role."""
+    endpoint checks object ownership or restricts it to a role. Models listed under
+    ``public_models`` in the base config are intentionally public (PLAN.md §6.11)."""
     if e.authn != Verdict.AUTH or e.public_by_config or e.owner_check:
         return []
     if any(g.kind in OBJECT_GUARDS and enforcing(g) for g in e.guards):
         return []
-    return [s for s in e.sinks if s.id_param and not s.principal_scoped]
+    return [
+        s
+        for s in e.sinks
+        if s.id_param
+        and not s.principal_scoped
+        and (s.model or "").rsplit(".", 1)[-1] not in public_models
+    ]
 
 
-def idor_tier(e: Endpoint) -> str | None:
-    """ "high" (no principal at all), "medium" (principal not tied to the object), or None."""
-    if not _exposed_sinks(e):
+def idor_tier(e: Endpoint, public_models: frozenset[str] = frozenset()) -> str | None:
+    """IDOR tier: "high" (no principal at all), "medium" (principal not tied to the object)."""
+    if not _exposed_sinks(e, public_models):
         return None
     return "medium" if e.principals else "high"
 
@@ -73,16 +80,17 @@ class _IdorRule:
             for d in ctx.deltas
             if d.kind in {"scope_removed", "guard_removed", "condition_weakened"}
         }
+        public = frozenset(ctx.base_config.public_models)
         for e in head.endpoints:
-            if idor_tier(e) != self.tier_name or e.id in regressed:
+            if idor_tier(e, public) != self.tier_name or e.id in regressed:
                 continue
             b = base_by_id.get(e.id)
-            if b is not None and idor_tier(b) is not None:
+            if b is not None and idor_tier(b, public) is not None:
                 continue  # already exposed on the base branch: not introduced by this diff
-            yield self.finding(e, ctx)
+            yield self.finding(e, ctx, public)
 
-    def finding(self, e: Endpoint, ctx: RuleContext) -> Finding:
-        sinks = _exposed_sinks(e)
+    def finding(self, e: Endpoint, ctx: RuleContext, public: frozenset[str]) -> Finding:
+        sinks = _exposed_sinks(e, public)
         steps = route_evidence(e)
         for s in sinks[:3]:
             steps.append(

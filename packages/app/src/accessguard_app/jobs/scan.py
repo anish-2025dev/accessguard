@@ -92,7 +92,9 @@ async def run_diff(
         )
         timings["analyze"] = time.perf_counter() - t
         metrics.SCAN_PHASE.labels(phase="analyze").observe(timings["analyze"])
-        if svc.judge is not None and result.findings:
+        # LLM triage is opt-in per repository (base-branch `llm.provider`, PLAN.md §6.11):
+        # code slices only leave the worker when the repository asked for it.
+        if svc.judge is not None and cfg.llm.provider != "off" and result.findings:
             # Downgrade/suppress only (ADR 011); the head checkout is the judge's only source.
             t = time.perf_counter()
             out = await apply_triage(

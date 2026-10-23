@@ -5,7 +5,9 @@ rules, and the per-scan latency is reported (PLAN.md §3 Phase 2: p95 < 2 minute
 from __future__ import annotations
 
 import re
+import shutil
 import time
+from pathlib import Path
 
 import yaml
 from accessguard_app.runtime import Services
@@ -50,22 +52,39 @@ def _add(services: Services, case: str) -> tuple[str, str]:
     return base, head
 
 
-async def test_llm_judge_can_only_suppress_and_is_reported(services: Services) -> None:
-    """With a judge configured, an advisory IDOR finding it suppresses disappears from the
-    report and the summary counts it; deterministic findings are never sent to the judge."""
+async def test_llm_judge_is_opt_in_can_only_suppress_and_is_reported(
+    services: Services, tmp_path: Path
+) -> None:
+    """With a judge configured and the repository opted in (base-branch ``llm.provider``), an
+    advisory IDOR finding it suppresses disappears from the report and the summary counts it.
+    Without the opt-in nothing is sent to the judge."""
     from authgraph.facts.models import TriageResult
     from authgraph.llm.fake import FakeJudge
 
     judge = FakeJudge(lambda f, c: TriageResult(decision="suppress", reason="read-only lookup"))
     services.judge = judge
     try:
-        base, head = setup_repo(services, "m42_idor_user_not_tied_to_object")
+        case = "m42_idor_user_not_tied_to_object"
+        base, head = setup_repo(services, case)
         await install(services)
         g = gh(services)
+        # Without opt-in: the judge is never called and the advisory finding is reported.
+        g.set_pull(REPO, 2, base, head)
+        await post_event(services, "pull_request", pr_payload("opened", number=2))
+        await drain(services, include={"route_delivery", "scan_pr"})
+        assert judge.seen == []
+        # Opt in on the base branch.
+        opted = tmp_path / "base"
+        shutil.copytree(MUTATIONS / case / "base", opted)
+        (opted / ".accessguard.yml").write_text("version: 1\nllm:\n  provider: api\n")
+        base = "c".ljust(40, "0")
+        g.repos[REPO].commits[base] = opted
         g.set_pull(REPO, 1, base, head)
         await post_event(services, "pull_request", pr_payload("opened", number=1))
         await drain(services, include={"route_delivery", "scan_pr"})
-        summary = next(c for c in g.check_runs.values() if c["head_sha"] == head)["output"]
+        runs = [c for c in g.check_runs.values() if c["head_sha"] == head]
+        assert "AG-IDOR-002" in runs[0]["output"]["summary"]  # PR 2, not opted in
+        summary = runs[-1]["output"]  # PR 1, opted in
         assert "AG-IDOR-002" not in summary["summary"]
         assert "1 heuristic/advisory finding(s) suppressed by LLM triage" in summary["summary"]
         assert {c.rule_id for c in judge.seen} == {"AG-IDOR-002"}
