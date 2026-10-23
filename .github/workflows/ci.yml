@@ -1,8 +1,8 @@
 # PLAN.md §4 "CI/CD pipeline": lint, types, tests, and the eval regression gate on every PR.
-# Action inputs verified against each action's action.yml at the pinned tag:
-#   https://github.com/actions/checkout/blob/v7/action.yml
-#   https://github.com/astral-sh/setup-uv/blob/v10.3.2/action.yml
-#   https://github.com/actions/upload-artifact/blob/v7/action.yml
+# Action inputs verified against each action's action.yml at the pinned commit:
+#   https://github.com/actions/checkout/blob/3d3c42e5aac5ba805825da76410c181273ba90b1/action.yml
+#   https://github.com/astral-sh/setup-uv/blob/07a047e608db84b3d8c06cd9a7c7dcc9c355c18e/action.yml
+#   https://github.com/actions/upload-artifact/blob/cf430e030ddbb5b0abf93d22962f4752f3646cd9/action.yml
 name: ci
 
 on:
@@ -21,8 +21,10 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.3.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           python-version: "3.12"
           enable-cache: true
@@ -37,10 +39,11 @@ jobs:
   eval:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          persist-credentials: false
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v10.3.2
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           python-version: "3.12"
           enable-cache: true
@@ -60,7 +63,7 @@ jobs:
       # Absolute gates (eval/gates.yaml) plus no per-rule regression versus the base branch.
       - name: Eval (gates + no regression vs base)
         run: make eval-gates BASELINE="$RUNNER_TEMP/baseline/report.json"
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: eval-report
@@ -71,8 +74,10 @@ jobs:
     # layer 1). Only the checkouts are fetched here; scanned code is never executed in CI.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.3.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           python-version: "3.12"
           enable-cache: true
