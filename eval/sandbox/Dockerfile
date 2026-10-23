@@ -21,7 +21,9 @@ RUN if [ -s /build-ca.crt ]; then export PIP_CERT=/build-ca.crt; fi; \
 
 # Directories the app expects at import time (e.g. built frontend assets), space-separated.
 ARG MKDIRS=""
-RUN for d in $MKDIRS; do mkdir -p "/src/$d"; done
+ARG TOUCH=""
+RUN for d in $MKDIRS; do mkdir -p "/src/$d"; done; \
+    for f in $TOUCH; do mkdir -p "$(dirname "/src/$f")" && touch "/src/$f"; done
 
 COPY dump_routes.py /dump_routes.py
 USER 65534:65534
