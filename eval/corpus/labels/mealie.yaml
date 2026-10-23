@@ -1,0 +1,5 @@
+# Hand labels for eval/tools/replay_history.py (see its docstring).
+77586a264d69a8aab9faed732817815578a637478c26694c474c88788890bf9e:
+  actionable: false
+  label: tp
+  note: PWA manifest must be fetchable without auth (by design)
