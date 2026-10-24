@@ -1,0 +1,7 @@
+id: m42_idor_user_not_tied_to_object
+kind: positive
+framework: fastapi
+description: "Adds PUT /items/{item_id} that loads the current user but updates any item by id."
+expected:
+  - rule_id: AG-IDOR-002
+    key: "PUT /items/{item_id}"

@@ -65,6 +65,7 @@ async def publish_pr(
     fail_on: str,
     endpoints: int,
     unknown: int,
+    suppressed: int = 0,
 ) -> PublishResult:
     gh: GitHubPort = svc.github
     demoted = await demoted_rules(svc, {f.rule_id for f in findings})
@@ -157,6 +158,7 @@ async def publish_pr(
         endpoints=endpoints,
         intro=intro,
         demoted=sorted(demoted),
+        suppressed=suppressed,
     )
     return PublishResult(
         posted, updated, resolved, summary_only, "failure" if failing else "success", title, text

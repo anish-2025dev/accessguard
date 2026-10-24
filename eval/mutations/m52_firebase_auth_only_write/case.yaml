@@ -1,0 +1,7 @@
+id: m52_firebase_auth_only_write
+kind: positive
+framework: data
+description: "Lets any signed-in user write announcements."
+expected:
+  - rule_id: AG-DATA-003
+    key: "firestore.rules:/announcements/{id}"

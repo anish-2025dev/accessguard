@@ -1,0 +1,7 @@
+id: m35_admin_path_write_without_role
+kind: positive
+framework: fastapi
+description: "Adds POST /admin/broadcast to the admin router with authentication only (absolute rule: too few peers for statistics)."
+expected:
+  - rule_id: AG-ROLE-001
+    key: "POST /admin/broadcast"

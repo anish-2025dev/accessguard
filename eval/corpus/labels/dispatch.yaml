@@ -1,0 +1,45 @@
+# Corpus hand labels (see eval/tools/replay_history.py). label=factual TP/FP; actionable=would a reviewer act.
+0a451c909b9a40468ff2d1089865dbf770e63fd1037701c8a4aae35c3ed5af41:
+  actionable: false
+  label: tp
+  note: search_filter has creator_id; fetched by id with no creator check (low-sev cross-user read within an org)
+0f57ec12536700b4618b7cc219011254f14e78cc7c679de5529d559fdea56fea:
+  actionable: false
+  label: fp
+  note: tag recommendations, read-only, project/incident-scoped
+0f5e07151406f865a9ff19b9c2bb145ea24811e55ca1899025ab2f0b4755e2ca:
+  actionable: false
+  label: fp
+  note: entity_type recalculate, org-scoped
+21566dcd21d7a1df047e3ab4f01c38438f97a23f56c196da0703c3f850f3dd6a:
+  actionable: false
+  label: fp
+  note: ai prompt is org-level config, no per-user owner
+7da84da00cc5f606c6b108753f854077a969053decb9c613fbc54f3da4b583ab:
+  actionable: false
+  label: fp
+  note: ai prompt is org-level config, no per-user owner
+7e47e66a9732a0918fc7645859d462ffe96bccba4bc6fc0d044020941610ada9:
+  actionable: false
+  label: fp
+  note: signal update, org/project-scoped
+9cef020a41acf98734c8863bbe1d45b64354b7861f55651c936b23ac4a66ee0c:
+  actionable: false
+  label: fp
+  note: signal is org/project-scoped, not user-owned; {organization} schema enforces tenancy
+c31a0b81a84591afc20f9af1cdc9ef707acfbdf7f8c700c41fa9f43c5f76bedf:
+  actionable: false
+  label: fp
+  note: tag recommendations, read-only, project/case-scoped
+e66c2e6df6ca5b04523213f17e855490996e734100d7bbd26cd6a33ab70c3d1a:
+  actionable: false
+  label: fp
+  note: ai prompt is org-level config, no per-user owner
+e7af74b77beacfd3779c2461658bf8642d1b0428d23ebaeab668589278570a64:
+  actionable: false
+  label: fp
+  note: signal stats, org/project-scoped
+f70a627ef730c63e9327ae9a428bcc677ec6f5a99ea06f3707f62c2f00f9e2dd:
+  actionable: false
+  label: fp
+  note: entity_type is org-scoped (owner is a text attr, not a user FK)

@@ -239,3 +239,25 @@ def test_neutered_authn_is_not_reported_where_a_role_check_still_rejects(tmp_pat
     assert _diff(
         tmp_path, {"deps.py": NEUTER_DEPS, "main.py": MAIN}, {"deps.py": head, "main.py": MAIN}
     ) == [("AG-AUTH-002", "GET /items")]
+
+
+def test_callee_parameter_named_like_a_user_is_not_a_principal(tmp_path: Path) -> None:
+    # crud.update(user_id=...) must not make `user_id` a principal: inlining the lookup into
+    # the handler is not a removed scope (full-stack-fastapi-template #689).
+    crud = (
+        "def update(db, user_id):\n"
+        "    return db.query(User).filter(User.id == user_id).update({})\n"
+    )
+    route = (
+        "from fastapi import FastAPI, Depends\n"
+        "from deps import require_admin\n"
+        "import crud\n"
+        "app = FastAPI()\n"
+        "@app.patch('/users/{user_id}')\n"
+        "def patch(user_id: int, db=None, admin=Depends(require_admin)):\n"
+        "    {body}\n"
+    )
+    base = route.replace("{body}", "return crud.update(db, user_id=user_id)")
+    head = route.replace("{body}", "return db.query(User).filter(User.id == user_id).update({})")
+    files = {"deps.py": DEPS, "crud.py": crud}
+    assert _diff(tmp_path, {**files, "main.py": base}, {**files, "main.py": head}) == []

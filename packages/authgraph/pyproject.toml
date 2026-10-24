@@ -6,10 +6,18 @@ readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.12"
 dependencies = [
+    "pglast>=7.10",
     "pydantic>=2.9",
     "pyyaml>=6.0",
+    "tree-sitter>=0.25",
+    "tree-sitter-javascript>=0.25",
+    "tree-sitter-typescript>=0.23",
     "z3-solver>=4.13",
 ]
+
+[project.optional-dependencies]
+# LLM judge backend (PLAN.md §6.13). Off unless a model is configured; tests use FakeJudge.
+llm = ["litellm>=1.82.6"]
 
 [project.scripts]
 authgraph = "authgraph.cli:main"

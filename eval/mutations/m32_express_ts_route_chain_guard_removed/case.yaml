@@ -1,0 +1,7 @@
+id: m32_express_ts_route_chain_guard_removed
+kind: positive
+framework: express
+description: "TypeScript router.route() chain: drops requireAuth from the DELETE handler only."
+expected:
+  - rule_id: AG-AUTH-002
+    key: "DELETE /orders/:id"

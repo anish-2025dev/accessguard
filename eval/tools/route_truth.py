@@ -70,6 +70,48 @@ def _deps_dir(src: Path, target: str) -> str:
     return "."
 
 
+NODE_LOADER = "file:///usr/local/lib/node_modules/tsx/dist/loader.mjs"
+
+
+def node_truth_for(repo: dict[str, Any], ca_bundle: Path | None = None) -> dict[str, object]:
+    """Express: eval/sandbox/node; ``entry`` is loaded, then ``call`` (an export) is awaited."""
+    src = CHECKOUTS / repo["name"]
+    if not src.is_dir():
+        raise SystemExit(f"{src} missing; run eval/tools/fetch_corpus.py first")
+    image = f"accessguard-node-routes-{repo['name'].lower()}"
+    with tempfile.TemporaryDirectory() as ctx:
+        shutil.copytree(
+            src, Path(ctx) / "src", symlinks=True, ignore=shutil.ignore_patterns(".git")
+        )
+        for f in ("Dockerfile", "dump_routes.js"):
+            shutil.copy(SANDBOX / "node" / f, Path(ctx) / f)
+        (Path(ctx) / "build-ca.crt").write_bytes(ca_bundle.read_bytes() if ca_bundle else b"")
+        build = ["docker", "build", "-q", "-t", image]
+        build += ["--build-arg", f"APP_DIR={repo.get('workdir', '.')}"]
+        if ca_bundle and os.environ.get("HTTPS_PROXY"):
+            proxy = os.environ["HTTPS_PROXY"]
+            build += ["--network", "host", "--build-arg", f"HTTPS_PROXY={proxy}"]
+        subprocess.run([*build, ctx], check=True, timeout=BUILD_TIMEOUT)
+    # The app writes into its own tree on start-up (Juice Shop), so the rootfs stays writable;
+    # the container is still network-less, unprivileged and discarded after the run.
+    flags = [f for f in RUN_FLAGS if f != "--read-only"]
+    flags[flags.index("PYTHONDONTWRITEBYTECODE=1")] = "NODE_ENV=test"
+    extra: list[str] = []
+    for k, v in (repo.get("env") or {}).items():
+        extra += ["--env", f"{k}={v}"]
+    workdir = f"/src/{repo['workdir']}" if repo.get("workdir") else "/src"
+    cmd = ["docker", "run", *flags, *extra, "--workdir", workdir, "--entrypoint", "node", image]
+    cmd += ["--import", NODE_LOADER, "/dump_routes.js", workdir, repo["entry"]]
+    if repo.get("call"):
+        cmd += [repo["call"], json.dumps(repo.get("call_args", []))]
+    out = subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=RUN_TIMEOUT)
+    data: dict[str, object] = json.loads(out.stdout.strip().splitlines()[-1])
+    if not data.get("app") or not data.get("routes"):
+        raise ValueError(f"no routes recorded; errors: {data.get('errors', [])}")
+    data.update(name=repo["name"], ref=repo["ref"])
+    return data
+
+
 def truth_for(repo: dict[str, Any], ca_bundle: Path | None = None) -> dict[str, object]:
     src = CHECKOUTS / repo["name"]
     if not src.is_dir():
@@ -115,11 +157,13 @@ def main() -> int:
     only = set(args.names)
     TRUTH.mkdir(parents=True, exist_ok=True)
     failed = False
-    for repo in spec["route_ground_truth"]:
+    groups = [(r, truth_for) for r in spec["route_ground_truth"]]
+    groups += [(r, node_truth_for) for r in spec.get("express_route_ground_truth", [])]
+    for repo, fn in groups:
         if only and repo["name"] not in only:
             continue
         try:
-            data = truth_for(repo, args.ca_bundle)
+            data = fn(repo, args.ca_bundle)
         except (OSError, subprocess.SubprocessError, ValueError) as e:
             print(f"{repo['name']}: FAILED ({e})")
             failed = True

@@ -1,0 +1,19 @@
+id: m31_express_jwt_made_optional
+kind: positive
+framework: express
+description: "Sets credentialsRequired: false on the shared JWT middleware; admin routes keep their role check, every other route that used it opens up."
+expected:
+  - rule_id: AG-AUTH-002
+    key: "GET /api/items"
+  - rule_id: AG-AUTH-002
+    key: "GET /api/items/:id"
+  - rule_id: AG-AUTH-002
+    key: "POST /api/items"
+  - rule_id: AG-AUTH-002
+    key: "DELETE /api/items/:id"
+  - rule_id: AG-AUTH-002
+    key: "GET /reports"
+  - rule_id: AG-AUTH-002
+    key: "GET /orders/:id"
+  - rule_id: AG-AUTH-002
+    key: "DELETE /orders/:id"

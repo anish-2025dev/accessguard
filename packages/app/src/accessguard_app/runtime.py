@@ -8,6 +8,7 @@ from typing import Any, Protocol
 
 import redis as redis_sync
 import redis.asyncio as aioredis
+from authgraph.llm.judge import Judge
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from accessguard_app.github.port import GitHubPort
@@ -58,6 +59,7 @@ class Services:
     queue: Enqueuer
     sync_redis: redis_sync.Redis | None = None
     extra: dict[str, Any] = field(default_factory=dict)
+    judge: Judge | None = None  # LLM triage; None when no model is configured
 
 
 # --- PR generation counter (FR-2.6) -------------------------------------------------------------

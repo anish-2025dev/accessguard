@@ -22,10 +22,13 @@ push to the default branch.
 
 ## LLM use
 
-The LLM is off by default in the CLI. When enabled, it receives a bounded context pack (the
-finding plus the relevant functions), never secrets, images or agent-instruction files. You can
-choose a local model (Ollama) so code never leaves your infrastructure, or `llm.provider: off`
-in `.accessguard.yml`.
+The LLM is off by default, in the CLI and in the App. The App sends nothing to a model unless
+the repository opts in with `llm.provider: api` (or `ollama`) in `.accessguard.yml` on its base
+branch **and** the operator has configured a model (`ACCESSGUARD_LLM_MODEL`; an `ollama/...`
+model keeps code on your own infrastructure). When enabled, the judge receives a bounded context
+pack (the finding plus at most six code slices), with lines addressed to reviewers or models
+removed, and never secrets, images or agent-instruction files (`CLAUDE.md`, `AGENTS.md`, ...).
+It can only keep, downgrade or suppress heuristic and advisory findings (ADR 011).
 
 ## Deletion
 

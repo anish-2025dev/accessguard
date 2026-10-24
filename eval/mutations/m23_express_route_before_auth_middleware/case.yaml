@@ -1,0 +1,7 @@
+id: m23_express_route_before_auth_middleware
+kind: positive
+framework: express
+description: "Registers POST /api/export on the app before app.use('/api', requireAuth)."
+expected:
+  - rule_id: AG-AUTH-003
+    key: "POST /api/export"

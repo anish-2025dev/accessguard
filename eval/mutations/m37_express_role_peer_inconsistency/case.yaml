@@ -1,0 +1,7 @@
+id: m37_express_role_peer_inconsistency
+kind: positive
+framework: express
+description: "Adds POST /api/staff/broadcast without requireAdmin; its four write peers have it."
+expected:
+  - rule_id: AG-ROLE-001
+    key: "POST /api/staff/broadcast"

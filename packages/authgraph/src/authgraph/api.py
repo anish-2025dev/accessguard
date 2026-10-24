@@ -25,6 +25,8 @@ class DiffResult:
     head: FactGraph
     config: Config  # the base-branch config that was applied
     config_errors: list[str] = field(default_factory=list)
+    # Findings an LLM judge suppressed (reason in ``llm_triage``); counted in the check summary.
+    suppressed: list[Finding] = field(default_factory=list)
 
 
 def scan(tree: SourceTree, config: Config | None = None) -> Analysis:

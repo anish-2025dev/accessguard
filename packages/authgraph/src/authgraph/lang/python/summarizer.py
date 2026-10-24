@@ -13,6 +13,7 @@ from typing import Any
 
 from authgraph.lang.python.summary import (
     Assign,
+    CallArgs,
     ClassInfo,
     ExceptInfo,
     FileSummary,
@@ -230,6 +231,43 @@ def _root_name(node: ast.AST) -> str | None:
     return node.id if isinstance(node, ast.Name) else None
 
 
+# Model-class query APIs (Tortoise, Beanie, SQLModel helpers, Django-style managers) and
+# Mongo collections (PyMongo / Motor), recognised by shape only.
+ODM_METHODS = frozenset(
+    {"get", "get_or_none", "get_or_404", "find_one", "find", "filter", "filter_by", "first"}
+)
+MONGO_METHODS = frozenset(
+    {
+        "find_one",
+        "find",
+        "delete_one",
+        "delete_many",
+        "update_one",
+        "update_many",
+        "replace_one",
+        "find_one_and_update",
+        "find_one_and_delete",
+    }
+)
+MAX_ARG_CALLS = 60
+
+
+def _odm_sink(call: ast.Call, chain: list[ast.Call], methods: list[str]) -> tuple[str | None, str]:
+    first = chain[0]
+    f = first.func
+    if not isinstance(f, ast.Attribute) or not (first.args or first.keywords):
+        return None, ""
+    recv = dotted(f.value) or ""
+    parts = recv.split(".")
+    if f.attr in MONGO_METHODS and any(
+        p in {"db", "database", "collection", "coll"} or p.endswith("_collection") for p in parts
+    ):
+        return parts[-1], "mongo"
+    if f.attr in ODM_METHODS and (parts[0][:1].isupper() or parts[-1] == "objects"):
+        return parts[0], "odm"
+    return None, ""
+
+
 def _names_in(node: ast.AST) -> set[str]:
     return {n.id for n in ast.walk(node) if isinstance(n, ast.Name)}
 
@@ -410,6 +448,7 @@ class _FunctionVisitor:
                 d = call_dotted(node) or ""
                 if d:
                     self.calls.append(d)
+                    self._arg_call(d, node)
                 last = d.split(".")[-1]
                 if (
                     (last == "decode" and "jwt" in d.lower())
@@ -430,11 +469,25 @@ class _FunctionVisitor:
             elif isinstance(node, ast.Attribute):
                 if node.attr in ROLE_ATTRS:
                     self.fn.role_refs.append(node.attr)
+                if node.attr in {"user", "current_user", "principal", "identity"} and (
+                    _root_name(node) in {"request", "g", "req", "self"}
+                ):
+                    self.fn.principal_reads = True
             elif isinstance(node, ast.Compare):
                 self._owner_compare(node)
             elif isinstance(node, ast.For):
                 self._setattr_loop(node)
         self.fn.role_refs = sorted(set(self.fn.role_refs))
+
+    def _arg_call(self, callee: str, call: ast.Call) -> None:
+        if len(self.fn.arg_calls) >= MAX_ARG_CALLS:
+            return
+        args = [sorted(_names_in(a)) for a in call.args]
+        kwargs = {k.arg: sorted(_names_in(k.value)) for k in call.keywords if k.arg}
+        if any(args) or any(kwargs.values()):
+            self.fn.arg_calls.append(
+                CallArgs(callee=callee, args=args, kwargs=kwargs, line=call.lineno)
+            )
 
     def _owner_compare(self, node: ast.Compare) -> None:
         """``item.owner_id == user.id`` or ``current_user["username"] != username``."""
@@ -472,6 +525,8 @@ class _FunctionVisitor:
             if recv and recv.split(".")[-1] in {"db", "session", "s", "sess", "database"}:
                 model = dotted(call.args[0])
                 orm = "sqlalchemy.session.get"
+        if not orm:
+            model, orm = _odm_sink(call, chain, methods)
         if not orm or model is None:
             return
         kind: Any = "read"
@@ -480,6 +535,13 @@ class _FunctionVisitor:
         elif "update" in methods or "values" in methods:
             kind = "write"
         names: set[str] = set()
+        if orm in {"odm", "mongo"}:  # the lookup arguments are the predicate
+            for a in [*chain[0].args, *[k.value for k in chain[0].keywords]]:
+                names |= _names_in(a)
+            if methods[0].startswith(("delete", "find_one_and_delete")):
+                kind = "delete"
+            elif methods[0].startswith(("update", "replace", "find_one_and_update")):
+                kind = "write"
         for c, m in zip(chain, methods, strict=True):
             if m in {"filter", "filter_by", "where", "get"} or orm == "sqlalchemy.session.get":
                 args = c.args[1:] if orm == "sqlalchemy.session.get" else c.args

@@ -1,0 +1,5 @@
+id: m54_service_role_key_on_server
+kind: negative
+framework: data
+description: "Hard-codes the same key in a server route handler (bad practice, but not client exposure)."
+expected: []
