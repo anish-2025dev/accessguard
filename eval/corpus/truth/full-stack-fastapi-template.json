@@ -1,0 +1,131 @@
+{
+  "app": "backend/app/main.py:app",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/api/v1/items/",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/items/",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/items/{id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/items/{id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/items/{id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/login/access-token",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/login/test-token",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/openapi.json",
+      "kind": "Route"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/password-recovery-html-content/{email}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/password-recovery/{email}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/private/users/",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/reset-password/",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/users/",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/users/me",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/me",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/users/me",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/users/me/password",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/users/signup",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/users/{user_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/{user_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/users/{user_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/utils/health-check/",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/utils/test-email/",
+      "kind": "APIRoute"
+    }
+  ],
+  "errors": [],
+  "candidates": [
+    "backend/app/main.py:app"
+  ],
+  "name": "full-stack-fastapi-template",
+  "ref": "b1125d8839482cb7bbae603ddc6d0081bf87532e"
+}

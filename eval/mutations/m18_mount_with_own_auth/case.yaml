@@ -1,0 +1,5 @@
+id: m18_mount_with_own_auth
+kind: negative
+framework: fastapi
+description: "Mounts a sub-application that declares its own auth dependency."
+expected: []

@@ -1,0 +1,5 @@
+id: m21_guard_moved_to_new_module
+kind: move
+framework: fastapi
+description: "Moves get_current_user into app/security.py and imports it from there in app/deps.py."
+expected: []

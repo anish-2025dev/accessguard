@@ -1,0 +1,17 @@
+# Hand labels for eval/tools/replay_history.py (see its docstring).
+169cd2a74e18bb9ec4dccb9ac66dd30663ffa29699fac2d5d8b7b2da7fa6c4c5:
+  actionable: false
+  label: tp
+  note: public article read by spec (advisory)
+64f51f71e089fbfdcaadd16fde519fb415ff5f53aeaa4278f7fb9320192f90e5:
+  actionable: false
+  label: tp
+  note: public comments by spec (advisory)
+9157a417ac64032c30b8c266af2d5282a638293fedef77ca319bfb54e76f1d86:
+  actionable: false
+  label: tp
+  note: public article list by RealWorld spec (advisory)
+c5353ee4c185c1001caaf8790c3dbb5c3d6175a1aa65e84e4ae148eb42eed199:
+  actionable: false
+  label: tp
+  note: public profile read; RealWorld spec makes it optional-auth (advisory)

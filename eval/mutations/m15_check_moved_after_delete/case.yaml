@@ -1,0 +1,7 @@
+id: m15_check_moved_after_delete
+kind: positive
+framework: fastapi
+description: "Moves the ownership check below the delete, so any user can delete any note."
+expected:
+  - rule_id: AG-AUTH-002
+    key: "DELETE /notes/{item_id}"

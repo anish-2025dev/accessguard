@@ -1,0 +1,5 @@
+id: m22_admin_branch_added_owner_filter_kept
+kind: negative
+framework: fastapi
+description: "Adds an unscoped admin branch next to the still-scoped user query (multiset compare)."
+expected: []

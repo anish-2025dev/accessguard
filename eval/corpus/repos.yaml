@@ -3,7 +3,8 @@
 # discovers candidates statically (assignments of FastAPI(...)) and tries each in the sandbox.
 # Optional per repo: `python` (sandbox interpreter, default 3.12), `env` (dummy settings needed
 # at import time; never real secrets), `workdir` (relative to the repo root),
-# `mkdirs` (directories the app asserts exist at import time).
+# `mkdirs` / `touch` (directories / files the app asserts exist at import time),
+# `apt` (system build packages), `install_self` (pip install the project itself, for apps that read their own metadata).
 # Fetch with: python eval/tools/fetch_corpus.py   (clones into eval/corpus/checkouts, gitignored)
 
 route_ground_truth:          # layer 1: FastAPI route recall
@@ -21,30 +22,54 @@ route_ground_truth:          # layer 1: FastAPI route recall
   - name: fastapi-realworld-example-app
     url: https://github.com/nsidnev/fastapi-realworld-example-app
     ref: 029eb7781c60d5f563ee8990a0cbfb79b244538c
+    app: app/main.py:app
+    python: "3.11"
+    env: {DATABASE_URL: "postgresql://x:x@localhost/x", SECRET_KEY: sandbox}
   - name: dispatch
     url: https://github.com/Netflix/dispatch
     ref: dd2837e82a0bf5565b1b4b4b91ea30b7262d4061
+    app: src/dispatch/main.py:app
+    python: "3.12"
+    env: {DISPATCH_ENCRYPTION_KEY: "x7oQe1QGp0XzFhHKyxD4m-XH3oyFrRQyqC4rqtBaB0A=", DATABASE_HOSTNAME: localhost,
+          DATABASE_CREDENTIALS: "u:p", DISPATCH_JWT_SECRET: sandbox, STATIC_DIR: "/tmp"}
   - name: mealie
     url: https://github.com/mealie-recipes/mealie
     ref: 7f099c91fb3da974b810c8d695b98a87d1573765
+    app: mealie/app.py:app
+    python: "3.14"
+    env: {DATA_DIR: /tmp/mealie, PRODUCTION: "true"}
+    apt: [build-essential, libldap2-dev, libsasl2-dev]
   - name: lnbits
     url: https://github.com/lnbits/lnbits
     ref: 04b37f0d761222561bc8606cfe7edc86cabcce35
+    app: lnbits/__main__.py:app
+    python: "3.12"
+    install_self: true
+    env: {LNBITS_DATA_FOLDER: /tmp/lnbits}
   - name: polar
     url: https://github.com/polarsource/polar
     ref: ad44441b7edf346287a2eb4833aa0f1aebc992f9
-  - name: fastapi-alembic-sqlmodel-async
-    url: https://github.com/jonra1993/fastapi-alembic-sqlmodel-async
-    ref: 5101817accd747f206ca74b2c92f061ea69a5815
+    app: server/polar/app.py:app
+    python: "3.14"
+    workdir: server
+    touch: [server/emails/bin/react-email-pkg]
+  - name: fastapi-nano          # replaces fastapi-alembic-sqlmodel-async (HEAD is now a stub)
+    url: https://github.com/rednafi/fastapi-nano
+    ref: 6f4e90ba4b0ee1dedd65502aca75de1ae0fd656f
+    app: svc/main.py:app
   - name: fastapi-boilerplate
     url: https://github.com/igorbenav/FastAPI-boilerplate
     ref: 4deb9c45f4298d4a84f005126f6ee8ccd823acf8
+    app: backend/src/interfaces/main.py:app
+    workdir: backend
   - name: fastapi-react
     url: https://github.com/Buuntu/fastapi-react
     ref: af17f2d422d0ebc5f173e83f2c6931045ab055b0
+    app: "{{cookiecutter.project_slug}}/backend/app/main.py:app"
   - name: fastapi-users
     url: https://github.com/fastapi-users/fastapi-users
     ref: e9c57ff7ff2fd385bb0f6f795b524e9736b64290
+    app: examples/sqlalchemy/app/app.py:app
 
 vulnerable_pairs:            # layer 2: must fire on vulnerable, stay quiet on secure
   - name: vampi              # Flask/connexion, not FastAPI: used once a Flask adapter exists

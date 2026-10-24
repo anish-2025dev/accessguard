@@ -1,0 +1,7 @@
+id: m20_add_api_route_unauth
+kind: positive
+framework: fastapi
+description: "Registers a new admin action with add_api_route and no guard."
+expected:
+  - rule_id: AG-AUTH-001
+    key: "POST /admin/users/{user_id}/promote"

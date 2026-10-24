@@ -1,7 +1,7 @@
 id: m11_config_widened
 kind: positive
 framework: fastapi
-description: PR edits .accessguard.yml to declare an admin delete endpoint public.
+description: "PR edits .accessguard.yml to declare an admin delete endpoint public."
 expected:
   - rule_id: AG-CFG-001
     key: "DELETE /admin/users/{user_id}"

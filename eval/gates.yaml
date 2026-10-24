@@ -3,6 +3,7 @@
 min_precision: 0.90          # deterministic-tier rules only
 min_recall: 0.95             # synthetic mutation recall, all rules
 max_pure_move_findings: 0
+min_route_recall: 0.95      # static routes vs sandboxed app.routes (with --routes)
 deterministic_rules:
   - AG-AUTH-001
   - AG-AUTH-002

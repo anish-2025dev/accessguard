@@ -1,0 +1,10 @@
+# Hand labels for eval/tools/replay_history.py (see its docstring).
+09c26ff2baa1d2e8189bdf8b3a933af09d6b807627bced1656484e4911ac772d:
+  actionable: false
+  label: tp
+  note: 'superuser-only delete becomes self-delete for regular users: rejection condition really is weaker,
+    intended feature (not actionable)'
+7131e41a3aa99e6dab4850dc908f88a005ef2f45206f95765b89fdc8b5d845e5:
+  actionable: true
+  label: tp
+  note: 14129f7a50 new local-only POST /private/users/ creates users without auth; gated only by ENVIRONMENT=local

@@ -1,0 +1,76 @@
+{
+  "app": "examples/sqlalchemy/app/app.py:app",
+  "routes": [
+    {
+      "method": "POST",
+      "path": "/auth/forgot-password",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/jwt/login",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/jwt/logout",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/register",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/request-verify-token",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/reset-password",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/verify",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/authenticated-route",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/users/me",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PATCH",
+      "path": "/users/me",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/users/{id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/users/{id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PATCH",
+      "path": "/users/{id}",
+      "kind": "APIRoute"
+    }
+  ],
+  "errors": [],
+  "candidates": [
+    "examples/sqlalchemy/app/app.py:app"
+  ],
+  "name": "fastapi-users",
+  "ref": "e9c57ff7ff2fd385bb0f6f795b524e9736b64290"
+}

@@ -8,6 +8,7 @@ requires-python = ">=3.12"
 dependencies = [
     "pydantic>=2.9",
     "pyyaml>=6.0",
+    "z3-solver>=4.13",
 ]
 
 [project.scripts]

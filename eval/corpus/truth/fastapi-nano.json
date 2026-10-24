@@ -1,0 +1,31 @@
+{
+  "app": "svc/main.py:app",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api_a/{num}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api_b/{num}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/token",
+      "kind": "APIRoute"
+    }
+  ],
+  "errors": [],
+  "candidates": [
+    "svc/main.py:app"
+  ],
+  "name": "fastapi-nano",
+  "ref": "6f4e90ba4b0ee1dedd65502aca75de1ae0fd656f"
+}

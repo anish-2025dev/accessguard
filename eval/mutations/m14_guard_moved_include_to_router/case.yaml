@@ -1,0 +1,5 @@
+id: m14_guard_moved_include_to_router
+kind: negative
+framework: fastapi
+description: "Moves the items guard from include_router(dependencies=) to APIRouter(dependencies=)."
+expected: []
