@@ -1,0 +1,5 @@
+# Pilot hand labels (Phase 4). label=factual TP/FP; actionable=would a reviewer act.
+0bef1e927249de009bd15f18a372a536a367a644cdb8163654b4c3c23c4f6fa6:
+  actionable: false
+  label: tp
+  note: city_request_counts is an aggregate counts view, intended public stat

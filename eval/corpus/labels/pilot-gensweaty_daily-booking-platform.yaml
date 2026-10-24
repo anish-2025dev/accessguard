@@ -1,0 +1,33 @@
+# Pilot hand labels (Phase 4). label=factual TP/FP; actionable=would a reviewer act.
+09956f742b02a44e4590df34d4d9959fae0c505c89f99d3ed0fc43dd646868d4:
+  actionable: true
+  label: tp
+  note: 'comment_files: legacy user_id IS NULL rows writable by anyone'
+1816e39899fc16c12d790c00f40c18762e68754d71cd328365c35df92e8fb6c8:
+  actionable: true
+  label: tp
+  note: 'public_board_access: policy true, public can update any row'
+3bca05d6578bceb4bc629d3f95c1759ad75d7b9506b5581cae532c5925bea9dd:
+  actionable: true
+  label: tp
+  note: 'customers: NULL fail-open lets anon delete/update customer rows'
+3f4444f88728acaff12b4fb043f60780dc0791c5876b64a078c595bfbbf7bfa8:
+  actionable: true
+  label: tp
+  note: 'tasks: NULL fail-open lets anon delete/update tasks'
+72df12d431d63637dbee61dced85b35e5ff2d92ca1a940b4d8e05de7c7a75679:
+  actionable: false
+  label: tp
+  note: 'events: NULL fail-open anon insert, plausibly a guest-create flow'
+81cd84d1e52e9d040e3db977ad5fc7753104f3cbbc3b5ed47b9a46888dc84f0d:
+  actionable: false
+  label: tp
+  note: 'sub_users: public insert (registration), not readable back'
+9fa313209aa29c919d3ebe95904f0f20982caade43a1f230a89050aa49c077db:
+  actionable: false
+  label: tp
+  note: 'public_board_access: public insert (board-access request), not readable back'
+daeb155deece95e5ca69430ef98c5bbbfa9c159de63248a396c17bb74c115ab3:
+  actionable: true
+  label: tp
+  note: 'sub_users: policy true, public can update any row'

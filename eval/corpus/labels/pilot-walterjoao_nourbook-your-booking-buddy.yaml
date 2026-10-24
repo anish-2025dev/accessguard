@@ -1,0 +1,5 @@
+# Pilot hand labels (Phase 4). label=factual TP/FP; actionable=would a reviewer act.
+ed28ac3c6d09c49dfdc394bd4be9e75bd9fc51ace1dc281aa39f4ba79ccd2924:
+  actionable: true
+  label: tp
+  note: subscription_plans RLS off, anon/auth full CRUD
