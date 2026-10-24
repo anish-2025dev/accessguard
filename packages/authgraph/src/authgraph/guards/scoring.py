@@ -110,6 +110,13 @@ _ROLE_ATOM = re.compile(
     r"\b(role|roles|user_role|is_superuser|is_admin|is_staff|scopes|permissions|groups|admin|"
     r"superuser)\b"
 )
+# Comparing the principal against an admin/super-user reference in app settings or config is a
+# privilege (role) check, not per-object ownership, even though it has the `account.id == ...`
+# shape (pilot false positive: lnbits check_admin / check_super_user compare against
+# settings.super_user / settings.*admin_users).
+_ADMIN_SETTING = re.compile(
+    r"\b(settings|config|conf|cfg|app_settings)\.\w*(super_?user|admin|staff|root)", re.I
+)
 
 
 AUTHZ_NAME = re.compile(r"(admin|role|superuser|permission|staff|owner|privilege|scope)", re.I)
@@ -152,6 +159,9 @@ def classify(
         authn_first = 401 in statuses and not AUTHZ_NAME.search(fn.name)
         if authn_first:
             return GuardInfo(GuardKind.AUTHN, 0.9, "raise", cond)
+        if _ADMIN_SETTING.search(conds):
+            # Membership in an admin/super-user list from settings is a role check.
+            return GuardInfo(GuardKind.AUTHZ_ROLE, 0.9, "raise", cond)
         if fn.owner_compare and (_OWNER_ATOM.search(conds) or not _ROLE_ATOM.search(conds)):
             # Kind comes from the predicate, not the status code, so 400 -> 403 is no change.
             return GuardInfo(GuardKind.AUTHZ_OWNER, 0.85, "raise", cond)
