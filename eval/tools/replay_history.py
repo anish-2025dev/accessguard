@@ -1,7 +1,7 @@
 """Replay a corpus repo's real history through ``authgraph diff`` (real-world precision check).
 
-Every commit that touches Python is diffed against its first parent, exactly as a push to main
-would be. Findings are written to eval/reports/replay-<name>.json for hand labelling in
+Every commit that touches Python or .accessguard.yml is diffed against its first parent, as a push
+to main would be. Findings are written to eval/reports/replay-<name>.json for hand labelling in
 eval/corpus/labels/<name>.yaml:
 
     <fingerprint>: {label: tp | fp, actionable: true | false, note: "..."}
@@ -42,9 +42,16 @@ def main() -> int:
     args = ap.parse_args()
     repo = EVAL / "corpus" / "checkouts" / args.name
     if git(repo, "rev-parse", "--is-shallow-repository").strip() == "true":
-        git(repo, "fetch", "-q", f"--deepen={args.commits + 1}", "origin")
+        git(repo, "fetch", "-q", "--unshallow", "origin")
     shas = git(
-        repo, "rev-list", "--first-parent", f"--max-count={args.commits}", "HEAD", "--", "*.py"
+        repo,
+        "rev-list",
+        "--first-parent",
+        f"--max-count={args.commits}",
+        "HEAD",
+        "--",
+        "*.py",
+        ".accessguard.yml",
     ).split()
     cache = MemoryCache()
     out, timings = [], []
