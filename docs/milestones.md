@@ -9,7 +9,7 @@ Each phase is delivered as one pull request on a stacked branch.
 | Phase 1: Engine core (FastAPI) | `phase-1-engine-*` | FR-3.1, 3.2, 3.5, 3.6, 7.6 (rules); AG-AUTH-001/002/003, AG-ROLE-002, AG-CFG-001; CLI JSON/SARIF | Route recall >= 95%, mutation recall >= 95%, precision >= 90%, 0 pure-move findings | In review |
 | Phase 2: GitHub App delivery | `phase-2-github-app-*` | FR-1.1-1.6, FR-2.1-2.4, FR-2.6, reporter, feedback | E2E on staging, p95 < 2 min, zero lost webhooks | In review |
 | Phase 3: Breadth and data layer | `phase-3-breadth-*` | Express, FR-3.4, FR-3.3 high tier, LLM judge, FR-3.8/3.9/3.10 | Every rule measured, none > 10% effective FP | In review |
-| Phase 4: Runtime verification | `phase-4-runtime-*` | FR-2.5, RV-1-4, FR-3.8b, IDOR verified tier, pilot | v1.0 with published precision table | In progress |
+| Phase 4: Runtime verification | `phase-4-runtime-*` | FR-2.5, RV-1-4, FR-3.8b, IDOR verified tier, pilot | v1.0 with published precision table | In review (v1.0 tag pending a maintainer) |
 
 Creating the milestones on GitHub is a one-time manual step (Issues → Milestones → New), using
 the names in the first column.

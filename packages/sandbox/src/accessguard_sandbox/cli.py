@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 
 from authgraph.workspace.tree import open_tree
 
@@ -18,7 +19,14 @@ def main() -> int:
     sb.add_argument("--image")
     sb.add_argument("--probe", action="store_true", help="SET ROLE probes (FR-3.8b)")
     args = ap.parse_args()
-    result = PostgresSandbox(args.image).replay(open_tree(args.source), probe=args.probe)
+    try:
+        tree = open_tree(args.source)
+    except subprocess.CalledProcessError as e:
+        raise SystemExit(
+            f"error: cannot read '{args.source}': not a directory, and not a git revision in the "
+            f"current repository (git exited {e.returncode})"
+        ) from e
+    result = PostgresSandbox(args.image).replay(tree, probe=args.probe)
     print(
         json.dumps(
             {

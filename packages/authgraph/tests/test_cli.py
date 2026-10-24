@@ -59,3 +59,16 @@ def test_scan_text(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["scan", str(tmp_path)]) == 0
     out = capsys.readouterr().out
     assert "auth     DELETE /admin/users/{uid}" in out and "1 endpoints" in out
+
+
+def test_diff_bad_path_errors_cleanly(tmp_path: Path) -> None:
+    """A nonexistent base/head is a clean CLI error, not a raw git traceback."""
+    with pytest.raises(SystemExit) as ei:
+        main(["diff", str(tmp_path / "nope-base"), str(tmp_path / "nope-head")])
+    assert "cannot read" in str(ei.value)
+
+
+def test_scan_bad_path_errors_cleanly(tmp_path: Path) -> None:
+    with pytest.raises(SystemExit) as ei:
+        main(["scan", str(tmp_path / "does-not-exist")])
+    assert "cannot read" in str(ei.value)
