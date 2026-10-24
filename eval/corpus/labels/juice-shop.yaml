@@ -1,0 +1,13 @@
+# Corpus hand labels (see eval/tools/replay_history.py). label=factual TP/FP; actionable=would a reviewer act.
+31628383bb32d39e3e88a0032db91306d3514263e41a8c71bc3da7a247525112:
+  actionable: false
+  label: tp
+  note: GET /api/Hints public read (advisory), intended public
+456195f36e724725065f55c3aca1f87683aacbfc79073819bbf00578fbaae436:
+  actionable: true
+  label: tp
+  note: POST /rest/chat (LLM chatbot) reachable without authentication
+9d4491d76add9a7d699ef292ee1361af718a682d9502651c56c6040ccf953fdd:
+  actionable: true
+  label: tp
+  note: PUT /api/Hints/:id unauthenticated write (juice-shop allows GET+PUT on Hints by design)

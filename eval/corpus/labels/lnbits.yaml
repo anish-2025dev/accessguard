@@ -1,8 +1,12 @@
-# Hand labels for eval/tools/replay_history.py (see its docstring).
+# Corpus hand labels (see eval/tools/replay_history.py). label=factual TP/FP; actionable=would a reviewer act.
 0b0efab189d5b6033cba6f2d05d2eaf7b82dd5fabb05c8f368976efe53ed6638:
   actionable: false
   label: tp
   note: optional_user_id; falls back to public assets only (by design)
+0cae67487c9731a78a3bbf83fb68315e210aad913dfd28162419863176e718b4:
+  actionable: false
+  label: fp
+  note: Depends(check_super_user) not recognized as a role check
 0d1bc3118ece28a99f4af924311f96595bec1af8383eb00116f1a87f6add57cb:
   actionable: false
   label: tp
@@ -10,8 +14,7 @@
 15eddc64d8e3d00028101f158cf63b565c6ed5b709744d36f119af169d6fed7c:
   actionable: false
   label: tp
-  note: admin-only payments page opened to all users (#3174, intended); check_admin scored as owner, kind
-    label imprecise
+  note: admin-only payments page opened to all users (#3174, intended); check_admin scored as owner, kind label imprecise
 17dde2f4dc30f5ea24592289277731c0d06d6f8bc00ba2db344542dc7ffea48c:
   actionable: false
   label: tp
@@ -24,6 +27,10 @@
   actionable: false
   label: tp
   note: 2FA challenge page is shown before login by design
+40107119439e8c32127ee0d48a2e2a6ef9fc04b6c74e20ced97470ec91ae5b8b:
+  actionable: false
+  label: fp
+  note: router /users/api/v1 has Depends(check_admin); endpoint is admin-gated
 4981d51142a8a11d0955bd5f16c2ea6aa58c76e3483bc99b1d7cacb7bc7f2921:
   actionable: false
   label: tp
@@ -40,10 +47,18 @@
   actionable: false
   label: tp
   note: optional_user_id; falls back to public assets only (by design)
+8206c7ceaa2372eac85b84df8b7d375d5044dfda384b96f1f09ed54584f2041e:
+  actionable: false
+  label: fp
+  note: endpoint has Depends(check_super_user); engine saw auth only
 85082336814cbaf7a267ed93d1ad8cdd3ece5e3379fef871b3dd52cfaa467402:
   actionable: false
   label: tp
   note: check_admin replaced by check_user_exists with per-user scoping (#3174, intended)
+863b991bfe664195fc43bd860b658c4ef2b9563838e5b35ce6c4c387399eb557:
+  actionable: false
+  label: fp
+  note: Depends(check_super_user) not recognized as a role check
 884e2913bb5a044992bfe51a7590bf30abca632d47f77999797ee1f1bdc9953b:
   actionable: false
   label: tp
@@ -52,6 +67,10 @@
   actionable: false
   label: tp
   note: 'commit title: make blockexplorer page public (#4124)'
+96c564906125674ee0deeac7b830f32e9f982c20a7e5984b75e7f7ca5327d446:
+  actionable: false
+  label: fp
+  note: onchain hot-wallet status is super-user gated
 ac7eedabfcd5a8eb0eda1c4a9feebe5d6ef17bd1abf335d221dd16c18572be64:
   actionable: false
   label: tp
