@@ -1,0 +1,27 @@
+# Staging on Fly.io (PLAN.md §4): 1 API machine, 2 worker machines; managed Postgres and Redis
+# are attached as DATABASE_URL / REDIS_URL secrets. App secrets (GITHUB_APP_ID, GITHUB_CLIENT_ID,
+# GITHUB_CLIENT_SECRET, GITHUB_WEBHOOK_SECRET, GITHUB_PRIVATE_KEY) are set with `fly secrets set`.
+# Deploy from the repo root (build context = repo root):
+#   fly deploy . --config deploy/fly.toml --dockerfile deploy/Dockerfile
+# See docs/runbooks/deploy-staging.md.
+app = "accessguard-staging"
+primary_region = "iad"
+
+[deploy]
+  release_command = "alembic upgrade head"
+
+[processes]
+  api = "uvicorn accessguard_app.api.asgi:app --host 0.0.0.0 --port 8000"
+  worker = "arq accessguard_app.jobs.worker.HighWorker"
+  worker_low = "arq accessguard_app.jobs.worker.LowWorker"
+
+[http_service]
+  processes = ["api"]
+  internal_port = 8000
+  force_https = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    path = "/readyz"
+    interval = "15s"
+    timeout = "5s"

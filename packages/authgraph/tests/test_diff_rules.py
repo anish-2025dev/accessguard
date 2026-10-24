@@ -213,6 +213,21 @@ def test_rewritten_guard_with_disjoint_predicates_is_not_weakened() -> None:
     )
 
 
+def test_inline_accessguard_ignore(tmp_path: Path) -> None:
+    head_main = (
+        MAIN
+        + '# accessguard-ignore[AG-AUTH-001] public by design\n@app.post("/orders")\ndef orders(): ...\n'
+    )
+    assert (
+        _diff(tmp_path, {"deps.py": DEPS, "main.py": MAIN}, {"deps.py": DEPS, "main.py": head_main})
+        == []
+    )
+    other = MAIN + '# accessguard-ignore[AG-AUTH-002]\n@app.post("/orders")\ndef orders(): ...\n'
+    assert _diff(
+        tmp_path / "2", {"deps.py": DEPS, "main.py": MAIN}, {"deps.py": DEPS, "main.py": other}
+    ) == [("AG-AUTH-001", "POST /orders")]
+
+
 def test_adding_owner_check_to_role_checked_handler_is_not_a_removal(tmp_path: Path) -> None:
     base = """
 from fastapi import FastAPI, HTTPException, Depends
