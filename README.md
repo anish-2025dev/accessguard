@@ -4,7 +4,21 @@ A GitHub App that reviews pull requests and pushes for **access-control regressi
 
 It answers one question on every change: **who can access what, and did this change make it worse?**
 
-> Status: Phase 3 (breadth and data layer). The `authgraph` CLI analyses FastAPI and Express apps, Supabase migrations, Firebase rules and client bundles for secrets; the App runs locally with docker compose (see docs/runbooks/deploy-staging.md).
+> Status: Phase 4 (runtime verification). Findings can be confirmed against a PR's preview deployment with test accounts (docs/runbooks/runtime-verifier.md). The `authgraph` CLI analyses FastAPI and Express apps, Supabase migrations, Firebase rules and client bundles for secrets; the App runs locally with docker compose (see docs/runbooks/deploy-staging.md).
+
+## Measured precision
+On a pilot over **34 public AI-built repositories (1071 commits replayed, 32 findings)**, every
+finding was a factual true positive, and the deterministic tier that AccessGuard posts as inline
+PR comments was at **95% effective precision** (18/19 findings a reviewer would act on). Full
+breakdown and method: [docs/pilot.md](docs/pilot.md); reproduce with
+`python eval/tools/precision_table.py --pilot --markdown`.
+
+| Rule | Findings | TP | FP | Precision |
+|---|---|---|---|---|
+| AG-DATA-001 | 24 | 24 | 0 | 100% |
+| AG-DATA-002 | 4 | 4 | 0 | 100% |
+| AG-DATA-003 | 2 | 2 | 0 | 100% |
+| AG-SECRET-001 | 2 | 2 | 0 | 100% |
 
 ## How it works
 A deterministic engine (`authgraph`) builds a fact graph of every route, the auth guards that apply to it (including ones inherited from routers and middleware) and the data it touches, for both the PR's base and head. It reports only what got worse. An LLM may explain or downgrade findings, never create them.

@@ -26,6 +26,8 @@ WRITES = frozenset({"insert", "update", "delete", "write", "create"})
 DATA_RULES: dict[str, tuple[str, Tier]] = {
     "rls_disabled": ("AG-DATA-001", "deterministic"),
     "policy_true_write": ("AG-DATA-001", "deterministic"),
+    # insert-anything on rows the role cannot read back: often an intended form (pilot, ADR 017)
+    "write_only_insert": ("AG-DATA-001", "heuristic"),
     "security_definer_view": ("AG-DATA-001", "deterministic"),
     "null_fail_open": ("AG-DATA-002", "heuristic"),
     "firebase_open": ("AG-DATA-003", "deterministic"),
@@ -34,6 +36,8 @@ DATA_RULES: dict[str, tuple[str, Tier]] = {
 EXPLAIN = {
     "rls_disabled": "Row level security is off on a table the Supabase Data API exposes",
     "policy_true_write": "A permissive policy lets this role write every row",
+    "write_only_insert": "Anyone in this role can insert any row; they cannot read rows back, "
+    "so this is a spam/abuse risk rather than a leak (often an intended form)",
     "security_definer_view": "The view runs as its owner, so callers bypass RLS on its tables",
     "null_fail_open": "The policy passes when a value is NULL (anonymous caller or orphan row)",
     "firebase_open": "The Firebase rule allows this access without any condition",
@@ -43,6 +47,9 @@ FIX = {
     "rls_disabled": "`alter table ... enable row level security;` and add policies, or revoke "
     "the anon/authenticated privileges.",
     "policy_true_write": "Replace `true` with a predicate on the row owner, e.g. "
+    "`(select auth.uid()) = user_id`.",
+    "write_only_insert": "If the form is meant to be public, constrain the row in `with check` "
+    "(lengths, status = 'new', no foreign owner ids) and rate-limit it; otherwise require "
     "`(select auth.uid()) = user_id`.",
     "security_definer_view": "Create the view `with (security_invoker = true)`.",
     "null_fail_open": "Drop the `IS NULL` branch or require `auth.uid() IS NOT NULL`.",

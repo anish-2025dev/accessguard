@@ -37,3 +37,9 @@ services:
     environment: *env
     env_file: [../.env.dev]
     depends_on: {migrate: {condition: service_completed_successfully}}
+  verifier:
+    build: {context: .., dockerfile: deploy/Dockerfile}
+    command: ["arq", "accessguard_app.jobs.worker.VerifyWorker"]
+    environment: *env
+    env_file: [../.env.dev, ../.env.verifier]  # .env.verifier: ACCESSGUARD_VERIFIER_PRIVATE_KEY
+    depends_on: {migrate: {condition: service_completed_successfully}}

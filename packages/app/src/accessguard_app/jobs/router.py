@@ -11,6 +11,7 @@ import logging
 import re
 import uuid
 from typing import Any
+from urllib.parse import urlsplit
 
 from authgraph.guards.config import CONFIG_FILE, parse_config
 
@@ -204,6 +205,72 @@ async def on_issue_comment(svc: Services, action: str, p: dict[str, Any]) -> str
     return f"dismissed {len(rows)} finding(s)"
 
 
+# --- preview deployments (FR-2.5) -------------------------------------------------------------
+PREVIEW_TTL = 7 * 24 * 3600
+
+
+def preview_key(repo_id: int, sha: str) -> str:
+    return f"preview:{repo_id}:{sha}"
+
+
+async def on_deployment_status(svc: Services, action: str, p: dict[str, Any]) -> str:
+    """``deployment_status`` (``deployment.sha``, ``deployment_status.state`` /
+    ``environment_url`` / ``target_url``; githubkit 0.16.1 ``WebhookDeploymentStatusCreated``)."""
+    ds = p.get("deployment_status") or {}
+    if ds.get("state") != "success":
+        return f"deployment {ds.get('state')}"
+    url = ds.get("environment_url") or ds.get("target_url") or ""
+    return await schedule_verification(svc, p, (p.get("deployment") or {}).get("sha", ""), url)
+
+
+async def on_status(svc: Services, action: str, p: dict[str, Any]) -> str:
+    """Commit ``status`` (``sha``, ``state``, ``target_url``; githubkit ``WebhookStatus``): Vercel
+    and other hosts that report previews as commit statuses."""
+    if p.get("state") != "success" or not p.get("target_url"):
+        return "ignored status"
+    return await schedule_verification(svc, p, p.get("sha", ""), str(p["target_url"]))
+
+
+async def schedule_verification(svc: Services, p: dict[str, Any], sha: str, url: str) -> str:
+    """Remember the preview for the commit, and verify every open PR whose head it is and whose
+    scan already finished; a scan that finishes later picks the preview up (jobs/scan.py)."""
+    parts = urlsplit(url)
+    if parts.scheme != "https" or not parts.hostname or not sha:
+        return "no https preview url"
+    repo = p["repository"]
+    repo_id, full_name = int(repo["id"]), str(repo["full_name"])
+    inst = int(p["installation"]["id"])
+    preview = f"https://{parts.hostname}"
+    await svc.redis.set(preview_key(repo_id, sha), preview, ex=PREVIEW_TTL)
+    pulls = await svc.github.list_commit_pulls(inst, full_name, sha)
+    queued = 0
+    for pr in pulls:
+        if pr.get("state") != "open" or pr.get("head", {}).get("sha") != sha:
+            continue
+        async with svc.sessions() as db:
+            scan = await store.latest_done_scan(db, repo_id, int(pr["number"]), sha)
+        if scan is not None:
+            queued += await enqueue_verification(
+                svc, repo_id, int(pr["number"]), scan.scan_id, preview
+            )
+    return f"preview recorded, {queued} verification(s) queued"
+
+
+async def enqueue_verification(
+    svc: Services, repo_id: int, pr: int, scan_id: uuid.UUID, preview: str
+) -> int:
+    ok = await svc.queue.enqueue(
+        "verify_findings",
+        repo_id,
+        pr,
+        str(scan_id),
+        preview,
+        job_id=f"verify:{scan_id}",
+        queue="verify",
+    )
+    return int(ok)
+
+
 HANDLERS = {
     "installation": on_installation,
     "installation_repositories": on_installation_repositories,
@@ -211,4 +278,6 @@ HANDLERS = {
     "push": on_push,
     "check_run": on_check_run,
     "issue_comment": on_issue_comment,
+    "deployment_status": on_deployment_status,
+    "status": on_status,
 }

@@ -1,0 +1,17 @@
+# Pilot hand labels (Phase 4). label=factual TP/FP; actionable=would a reviewer act.
+3e2158a74325f47a198835caa2eff31ea8f409baa427154e6e271fb737bcf48d:
+  actionable: true
+  label: tp
+  note: 'shows: public insert on a publicly-readable content table'
+91913a059e7831bea196761cf6f865737d2aed43c987f8681aa9794d26ec1279:
+  actionable: true
+  label: tp
+  note: 'categories: public insert on a publicly-readable content table (defacement)'
+dca9f7e26f8d99694ad5ec1272ff11886a5ee1eaac9cbc15b1f4ac6926e1e158:
+  actionable: true
+  label: tp
+  note: 'videos: public insert on a publicly-readable content table'
+fca62384390e29bb65360e83fcf79b343367b3fa229e3a56cde6fca818addd19:
+  actionable: true
+  label: tp
+  note: 'subcategories: public insert on a publicly-readable content table'

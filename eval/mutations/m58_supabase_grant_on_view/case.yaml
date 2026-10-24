@@ -1,0 +1,5 @@
+id: m58_supabase_grant_on_view
+kind: negative
+framework: data
+description: "GRANT SELECT on an existing security_invoker view; a grant on a view must not be modelled as a table without RLS (pilot false-positive shape)."
+expected: []
