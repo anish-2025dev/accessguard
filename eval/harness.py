@@ -144,7 +144,7 @@ def route_recall(truth_dir: Path = EVAL_DIR / "corpus" / "truth") -> dict[str, A
         unknown, endpoints = unknown + n_unknown, endpoints + len(facts.endpoints)
     return {
         "repos": repos,
-        "skipped_repos": skipped,
+        "skipped": skipped,
         "recall": hit / total if total else None,
         "unknown_rate": unknown / endpoints if endpoints else None,
     }
@@ -184,7 +184,7 @@ def to_markdown(report: dict[str, Any]) -> str:
                 f"| {name} | {r['truth']} | {r['found']} | {_fmt(r['recall'])} | "
                 f"{_fmt(r['unknown_rate'])} |"
             )
-        for name, reason in rr.get("skipped_repos", {}).items():
+        for name, reason in rr.get("skipped", {}).items():
             lines.append(f"- Skipped `{name}`: {reason}")
     failed = [c for c in report["cases"] if not c["ok"]]
     if failed:
@@ -225,9 +225,9 @@ def gate_failures(report: dict[str, Any], gates: dict[str, Any]) -> list[str]:
     if report["pure_move_findings"] > gates.get("max_pure_move_findings", 0):
         out.append(f"pure-move findings {report['pure_move_findings']} > 0")
     rr = report.get("route_recall")
-    if rr:
+    if rr is not None:
         if rr["recall"] is None:
-            out.append("route recall unavailable: no usable route truth/checkouts")
+            out.append("route recall unavailable: no usable truth routes")
         elif rr["recall"] < gates.get("min_route_recall", 0):
             out.append(f"route recall {_fmt(rr['recall'])} < {_fmt(gates['min_route_recall'])}")
     return out

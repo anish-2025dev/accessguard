@@ -256,3 +256,41 @@ def test_neutered_authn_is_not_reported_where_a_role_check_still_rejects(tmp_pat
     assert _diff(
         tmp_path, {"deps.py": NEUTER_DEPS, "main.py": MAIN}, {"deps.py": head, "main.py": MAIN}
     ) == [("AG-AUTH-002", "GET /items")]
+
+
+@pytest.mark.parametrize(
+    ("method", "path", "handler", "reported"),
+    [
+        ("POST", "/auth/delete-account", "remove", True),
+        ("POST", "/public/items", "create", True),
+        ("POST", "/token/{id}/delete", "remove", True),
+        ("POST", "/items/{token}", "create", True),
+        ("POST", "/admin/login", "login", True),
+        ("POST", "/admin/users", "create", True),
+        ("GET", "/admin/health", "health", True),
+        ("POST", "/auth/login", "issue", False),
+        ("POST", "/tokens/refresh/", "issue", False),
+        ("POST", "/auth/callback/{provider}", "handle", False),
+        ("POST", "/{tenant}/webhooks/{hook}", "handle", False),
+        ("POST", "/users", "create", False),
+    ],
+)
+def test_new_endpoint_auth_flow_boundaries(
+    tmp_path: Path, method: str, path: str, handler: str, reported: bool
+) -> None:
+    base = "from fastapi import FastAPI\napp = FastAPI()\n"
+    head = base + f'@app.{method.lower()}("{path}")\ndef {handler}(): ...\n'
+    found = _diff(tmp_path, {"main.py": base}, {"main.py": head})
+    assert found == ([("AG-AUTH-001", f"{method} {path.rstrip('/')}")] if reported else [])
+
+
+@pytest.mark.parametrize("path", ["/auth/items", "/public/items", "/health", "/token/{id}"])
+def test_auth_flow_path_does_not_hide_guard_removal(tmp_path: Path, path: str) -> None:
+    base = (
+        "from fastapi import FastAPI, Depends\nfrom deps import get_current_user\n"
+        f'app = FastAPI()\n@app.post("{path}")\ndef manage(user=Depends(get_current_user)): ...\n'
+    )
+    head = base.replace("user=Depends(get_current_user)", "")
+    assert _diff(
+        tmp_path, {"deps.py": DEPS, "main.py": base}, {"deps.py": DEPS, "main.py": head}
+    ) == [("AG-AUTH-002", f"POST {path}")]

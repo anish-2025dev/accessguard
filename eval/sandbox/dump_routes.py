@@ -144,7 +144,7 @@ def dump(root: Path, target: str) -> dict[str, Any]:
             with contextlib.redirect_stdout(sys.stderr):  # apps that print/log at import time
                 app = load(root, cand)
             routes = [r for r in walk(list(app.routes)) if r["path"] not in FRAMEWORK_DOC_PATHS]
-            try:  # apps may add routes during startup even with existing routes
+            try:  # apps may register additional routers in their startup lifespan
                 with contextlib.redirect_stdout(sys.stderr):
                     run_lifespan(app)
             except BaseException:

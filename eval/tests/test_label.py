@@ -41,7 +41,21 @@ def test_valid_labels(labels: Path, monkeypatch: pytest.MonkeyPatch, value: str)
     }
 
 
-@pytest.mark.parametrize("value", ["", "true", "TP", "tp:no", "fp:act:act", "fp:active"])
+@pytest.mark.parametrize(
+    "value",
+    [
+        "",
+        "true",
+        "TP",
+        "tp:no",
+        "fp:act:act",
+        "fp:active",
+        "unknown",
+        "tp:action",
+        "fp:act:extra",
+        ":act",
+    ],
+)
 def test_invalid_label_rejects_entire_batch_before_write(
     labels: Path, monkeypatch: pytest.MonkeyPatch, value: str
 ) -> None:

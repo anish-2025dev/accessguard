@@ -113,3 +113,25 @@ def test_dump_falls_back_to_pre_startup_routes(
     result = dump_routes.dump(tmp_path, "main.py:app")
     assert [r["path"] for r in result["routes"]] == ["/initial"]
     assert "sandbox cannot connect" in result["errors"][0]["error"]
+
+
+@pytest.mark.parametrize("startup_fails", [False, True])
+def test_dump_collects_after_startup_or_falls_back_to_initial_routes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, startup_fails: bool
+) -> None:
+    app = SimpleNamespace(routes=[APIRoute("/early", {"GET"}), Route("/docs", {"GET"})])
+    monkeypatch.setattr(dump_routes, "load", lambda root, target: app)
+
+    def startup(app: Any) -> None:
+        app.routes.append(APIRoute("/late", {"POST"}))
+        if startup_fails:
+            raise RuntimeError("sandbox startup unavailable")
+
+    monkeypatch.setattr(dump_routes, "run_lifespan", startup)
+    result = dump_routes.dump(tmp_path, "main.py:app")
+    assert result["app"] == "main.py:app"
+    expected = {"/early"} if startup_fails else {"/early", "/late"}
+    assert {r["path"] for r in result["routes"]} == expected
+    assert bool(result["errors"]) is startup_fails
+    if startup_fails:
+        assert "sandbox startup unavailable" in result["errors"][0]["error"]

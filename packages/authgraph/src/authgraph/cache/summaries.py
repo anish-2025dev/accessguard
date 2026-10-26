@@ -54,16 +54,14 @@ class DirCache(MemoryCache):
         return v
 
     def set(self, key: str, value: str) -> None:
-        with tempfile.NamedTemporaryFile(
-            mode="w", encoding="utf-8", dir=self.root, delete=False
-        ) as f:
-            temp = Path(f.name)
-            try:
+        fd, name = tempfile.mkstemp(dir=self.root)
+        temp = Path(name)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write(value)
-                f.close()
-                os.replace(temp, self._file(key))
-            finally:
-                temp.unlink(missing_ok=True)
+            os.replace(temp, self._file(key))
+        finally:
+            temp.unlink(missing_ok=True)
         super().set(key, value)
 
 

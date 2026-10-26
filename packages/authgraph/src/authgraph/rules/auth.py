@@ -65,8 +65,8 @@ class NewUnauthenticatedEndpoint:
                 continue
             e = d.head
             admin = "admin_path" in e.sensitivity
-            static_segments = [s for s in e.path.split("/") if s and "{" not in s]
-            last_static = "/" + static_segments[-1] if static_segments else ""
+            segments = [s for s in e.path.split("/") if s and "{" not in s and "<" not in s]
+            last_static = "/" + segments[-1] if segments else ""
             if not admin:
                 if AUTH_FLOW.search(last_static) or AUTH_FLOW_HANDLER.search(
                     e.handler.rsplit(".", 1)[-1]
