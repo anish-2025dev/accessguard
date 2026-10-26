@@ -1,0 +1,67 @@
+# Hand labels for eval/tools/replay_history.py (see its docstring).
+016b9b28f55d0dfabee0328d8775ac9f0d77fb22054148a2dc5a997fa1ef1075:
+  actionable: true
+  label: tp
+  note: POST /tasks/task enqueues background jobs with no auth; maintainers later added get_optional_user
+    + rate limiting
+0325cd5426539a191234614b8c729394a5a37e0d946c5a7ab1401510b2cd3eb9:
+  actionable: false
+  label: tp
+  note: public profile read (advisory)
+181401706686fba11da1e47759d493f3856ac870b23ff0f9873fb34e831fdd55:
+  actionable: false
+  label: tp
+  note: GET /user list without auth in initial scaffold (advisory)
+41ae6745885afab5ce63877a2a03dc021e07bfa821e6212015a806b9dda00fae:
+  actionable: false
+  label: tp
+  note: GET /deleted_users without auth (advisory); later removed
+4b5c5362547300068bfef5dac1921db439d63a96d765e6b8740d2646b9adbb24:
+  actionable: false
+  label: tp
+  note: rate limits list (advisory)
+4b9bea56689f8416fa46bc63639e6208aeb302af355a0d1200aa890d88b4eb5a:
+  actionable: false
+  label: tp
+  note: public tiers list (advisory)
+52bbe35a68116b7f72585bccdc5357502292e9f35e1ef9b970c9f7f18d7db6a9:
+  actionable: false
+  label: tp
+  note: public user read (advisory)
+5b668175ac6fd3f966599276a41089dbe4ebdd6538d0ef80433ff70fae0e82fe:
+  actionable: false
+  label: tp
+  note: public tier read (advisory)
+69e5de1bd819e7b23ed24f6a022d234aa6dec3df000907814ac80da172707f77:
+  actionable: false
+  label: tp
+  note: public rate-limit read (advisory)
+7286a1c3f9564148aae36a39f192aeb124252bc6eba030578f1dab5501450e7e:
+  actionable: false
+  label: tp
+  note: public post read (advisory)
+733a74a8ac40665354cdb9ad626e9530c78cca07aaa85a6e9178245c2d2b2061:
+  actionable: false
+  label: tp
+  note: rate limit read (advisory)
+94677e9c92afd6a18b4dbde5e15f0b278208d4002ce37dc3515979f3bbf47a7d:
+  actionable: false
+  label: tp
+  note: public profile read (advisory)
+9864e44f7db711a6d961df2a354ae3b3c62c0d3b166ffd6de3244b8e2bbba0d8:
+  actionable: false
+  label: tp
+  note: public user tier read (advisory)
+d79f836a5db57a6140ea06560f75f31888f6b4199e34830de4c3bf2eff75800c:
+  actionable: false
+  label: tp
+  note: public posts list (advisory)
+edccc44b7579374dc38d4b19b73fc74be57dca1460a2385fe813902f998f82db:
+  actionable: true
+  label: tp
+  note: GET /users lists every user without auth; later restricted with require_permissions('user.read')
+    in 7f4d22f22d
+f680b8de4dcc873e84cc2b9977d14a724beb9986d134c189d67351088a180381:
+  actionable: false
+  label: tp
+  note: public rate-limit list (advisory)

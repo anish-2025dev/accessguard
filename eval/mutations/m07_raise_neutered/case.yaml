@@ -1,7 +1,7 @@
 id: m07_raise_neutered
 kind: positive
 framework: fastapi
-description: Replaces the 401 raise with a log line, so invalid tokens fall through.
+description: "Replaces the 401 raise with a log line, so invalid tokens fall through."
 expected:
   - rule_id: AG-AUTH-002
     key: "GET /items/"

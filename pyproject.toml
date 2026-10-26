@@ -24,6 +24,9 @@ dev = [
     "mypy>=1.13",
     "types-PyYAML>=6.0",
     "pre-commit>=4.0",
+    "jsonschema>=4.23",
+    "types-jsonschema>=4.26.0.20261006",
+    "testcontainers[postgres]>=4.15",
 ]
 
 [tool.ruff]
@@ -36,10 +39,12 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "S"]
 ignore = ["S101"]  # asserts are fine in tests
 
 [tool.ruff.lint.per-file-ignores]
-"**/tests/**" = ["S"]
+"**/tests/**" = ["S", "E501"]
+"**/app_tests/**" = ["S", "E501"]
 "eval/**" = ["S603", "S607"]
 "eval/tools/gen_mutations.py" = ["E501"]  # fixture source text
 "deploy/github-app/register.py" = ["E501"]  # inline HTML template and doc URLs
+"deploy/e2e/**" = ["S603", "S607"]  # drives git with fixed argv
 
 [tool.mypy]
 python_version = "3.12"
@@ -49,7 +54,11 @@ warn_unused_configs = true
 module = ["authgraph.*"]
 strict = true
 
+[[tool.mypy.overrides]]
+module = ["z3"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
-testpaths = ["packages/authgraph/tests", "packages/app/tests", "eval/tests"]
+testpaths = ["packages/authgraph/tests", "packages/app/app_tests", "eval/tests"]
 asyncio_mode = "auto"
 addopts = "--import-mode=importlib"

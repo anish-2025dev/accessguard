@@ -1,0 +1,5 @@
+id: m13_equivalent_guard_swap
+kind: negative
+framework: fastapi
+description: "Replaces get_current_user with get_active_user, which itself depends on get_current_user."
+expected: []

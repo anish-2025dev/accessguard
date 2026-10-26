@@ -1,0 +1,1456 @@
+{
+  "app": "src/dispatch/main.py:app",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/api/v1/docs",
+      "kind": "Route"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/docs/openapi.json",
+      "kind": "Route"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/healthcheck",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/organizations",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/organizations",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/organizations/{organization_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/organizations/{organization_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/ai",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/ai",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/ai/defaults",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/ai/genai-types",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/ai/{prompt_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/ai/{prompt_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/ai/{prompt_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/auth/login",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/auth/me",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/auth/me/settings",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/auth/me/settings",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/auth/mfa",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/auth/myrole",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/auth/register",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/case_cost_types",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/case_cost_types",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/case_cost_types/{case_cost_type_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/case_cost_types/{case_cost_type_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/case_cost_types/{case_cost_type_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/case_costs",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/case_costs",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/case_costs/{case_cost_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/case_costs/{case_cost_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/case_costs/{case_cost_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/case_priorities",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/case_priorities",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/case_priorities/{case_priority_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/case_priorities/{case_priority_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/case_severities",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/case_severities",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/case_severities/{case_severity_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/case_severities/{case_severity_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/case_types",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/case_types",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/case_types/{case_type_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/case_types/{case_type_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/cases",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/cases",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/cases/minimal",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/cases/{case_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/cases/{case_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/cases/{case_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/cases/{case_id}/add/{email}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/cases/{case_id}/escalate",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/{organization}/cases/{case_id}/event",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/cases/{case_id}/event",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/cases/{case_id}/event/{event_uuid}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/cases/{case_id}/exportTimeline",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/cases/{case_id}/join",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/cases/{case_id}/participants",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/cases/{case_id}/participants/minimal",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/cases/{case_id}/remove/{email}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/cases/{case_id}/resources",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/cases/{case_id}/resources/conversation",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/cost_models",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/cost_models",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/cost_models/{cost_model_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/cost_models/{cost_model_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/data/alerts",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/data/alerts/{alert_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/data/alerts/{alert_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/data/alerts/{alert_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/data/queries",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/data/queries",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/data/queries/{query_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/data/queries/{query_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/data/queries/{query_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/data/sources",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/data/sources",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/data/sources/dataFormats",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/data/sources/dataFormats",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/data/sources/dataFormats/{source_data_format_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/data/sources/dataFormats/{source_data_format_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/data/sources/dataFormats/{source_data_format_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/data/sources/environments",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/data/sources/environments",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/data/sources/environments/{source_environment_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/data/sources/environments/{source_environment_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/data/sources/environments/{source_environment_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/data/sources/statuses",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/data/sources/statuses",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/data/sources/statuses/{source_status_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/data/sources/statuses/{source_status_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/data/sources/statuses/{source_status_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/data/sources/transports",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/data/sources/transports",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/data/sources/transports/{source_transport_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/data/sources/transports/{source_transport_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/data/sources/transports/{source_transport_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/data/sources/types",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/data/sources/types",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/data/sources/types/{source_type_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/data/sources/types/{source_type_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/data/sources/types/{source_type_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/data/sources/{source_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/data/sources/{source_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/data/sources/{source_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/definitions",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/definitions",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/definitions/{definition_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/definitions/{definition_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/definitions/{definition_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/documents",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/documents",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/documents/{document_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/documents/{document_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/documents/{document_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/email_template",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/email_template",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/email_template/{email_template_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/email_template/{email_template_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/email_template/{email_template_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/entity",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/entity",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/entity/{entity_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/entity/{entity_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/entity/{entity_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/entity/{entity_id}/cases/{days_back}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/entity/{entity_id}/signal_instances/{days_back}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/entity_type",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/entity_type",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/entity_type/recalculate/{entity_type_id}/{case_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/entity_type/{case_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/entity_type/{entity_type_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/entity_type/{entity_type_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/entity_type/{entity_type_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/entity_type/{entity_type_id}/process",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/feedback",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/feedback",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/feedback/{feedback_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/feedback/{feedback_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/feedback/{feedback_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/forms",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/forms",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/forms/completed/{form_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/forms/export",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/forms/{form_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/forms/{forms_id}/{individual_contact_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/forms/{forms_id}/{individual_contact_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/forms_type",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/forms_type",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/forms_type/{forms_type_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/forms_type/{forms_type_id}/{individual_contact_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/forms_type/{forms_type_id}/{individual_contact_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/incident_cost_types",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/incident_cost_types",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/incident_cost_types/{incident_cost_type_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/incident_cost_types/{incident_cost_type_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/incident_cost_types/{incident_cost_type_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/incident_costs",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/incident_costs",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/incident_costs/{incident_cost_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/incident_costs/{incident_cost_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/incident_costs/{incident_cost_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/incident_priorities",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/incident_priorities",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/incident_priorities/{incident_priority_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/incident_priorities/{incident_priority_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/incident_roles/{role}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/incident_roles/{role}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/incident_severities",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/incident_severities",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/incident_severities/{incident_severity_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/incident_severities/{incident_severity_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/incident_types",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/incident_types",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/incident_types/{incident_type_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/incident_types/{incident_type_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/incidents",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/incidents",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/incidents/metric/forecast",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/incidents/{incident_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/incidents/{incident_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/incidents/{incident_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/incidents/{incident_id}/add/{email}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/{organization}/incidents/{incident_id}/event",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/incidents/{incident_id}/event",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/incidents/{incident_id}/event/{event_uuid}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/incidents/{incident_id}/exportTimeline",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/incidents/{incident_id}/join",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/incidents/{incident_id}/regenerate",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/incidents/{incident_id}/remove/{email}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/incidents/{incident_id}/report/executive",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/incidents/{incident_id}/report/tactical",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/incidents/{incident_id}/report/tactical/generate",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/incidents/{incident_id}/resources",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/incidents/{incident_id}/subscribe",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/individuals",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/individuals",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/individuals/{individual_contact_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/individuals/{individual_contact_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/individuals/{individual_contact_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/notifications",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/notifications",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/notifications/{notification_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/notifications/{notification_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/notifications/{notification_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/plugins",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/plugins/instances",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/plugins/instances",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/plugins/instances/{plugin_instance_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/plugins/instances/{plugin_instance_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/plugins/instances/{plugin_instance_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/plugins/plugin_events",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/projects",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/projects",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/projects/{project_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/projects/{project_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/projects/{project_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/search",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/search/filters",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/search/filters",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/search/filters/{search_filter_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/search/filters/{search_filter_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/search/filters/{search_filter_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/service_feedback",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/service_feedback/{service_feedback_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/service_feedback/{service_feedback_id}/{individual_contact_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/services",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/services",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/services/externalids",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/services/{service_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/services/{service_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/services/{service_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/signals",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/signals",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/signals/engagements",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/signals/engagements",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/signals/engagements/{engagement_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/signals/engagements/{signal_engagement_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/signals/filters",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/signals/filters",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/signals/filters/{signal_filter_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/signals/filters/{signal_filter_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/signals/instances",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/signals/instances",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/signals/stats",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/signals/update/{signal_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/signals/{signal_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/signals/{signal_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/signals/{signal_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/signals/{signal_id}/stats",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/tag_types",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/tag_types",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/tag_types/{tag_type_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/tag_types/{tag_type_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/tag_types/{tag_type_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/tags",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/tags",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/tags/recommendations/{project_id}/case/{case_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/tags/recommendations/{project_id}/incident/{incident_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/tags/{tag_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/tags/{tag_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/tags/{tag_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/tasks",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/tasks",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/tasks/ticket/{task_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/tasks/{task_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/tasks/{task_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/teams",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/teams",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/teams/{team_contact_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/teams/{team_contact_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/teams/{team_contact_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/terms",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/terms",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/terms/{term_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/terms/{term_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/terms/{term_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/users",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/users",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/users/{user_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/users/{user_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/users/{user_id}/change-password",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/users/{user_id}/reset-password",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/workflows",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/workflows",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/workflows/instances/{workflow_instance_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/{organization}/workflows/{workflow_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/{organization}/workflows/{workflow_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/{organization}/workflows/{workflow_id}",
+      "kind": "APIRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/{organization}/workflows/{workflow_id}/run",
+      "kind": "APIRoute"
+    }
+  ],
+  "errors": [],
+  "candidates": [
+    "src/dispatch/main.py:app"
+  ],
+  "name": "dispatch",
+  "ref": "dd2837e82a0bf5565b1b4b4b91ea30b7262d4061"
+}

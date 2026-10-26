@@ -1,7 +1,7 @@
 id: m08_role_in_update_schema
 kind: positive
 framework: fastapi
-description: Adds `role` to a self-update schema that is mass-assigned onto the user.
+description: "Adds `role` to a self-update schema that is mass-assigned onto the user."
 expected:
   - rule_id: AG-ROLE-002
     key: "PATCH /users/me"

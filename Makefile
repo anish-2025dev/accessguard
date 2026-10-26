@@ -2,7 +2,7 @@
 UV ?= uv
 BASELINE ?=
 
-.PHONY: install test lint format typecheck check eval eval-gates corpus route-truth fixtures
+.PHONY: install test lint format typecheck check eval eval-gates eval-routes corpus route-truth fixtures replay
 
 install:
 	$(UV) sync
@@ -30,6 +30,15 @@ eval:
 
 eval-gates:
 	$(UV) run python eval/harness.py --enforce-gates $(if $(BASELINE),--baseline $(BASELINE))
+
+# Route recall vs sandbox ground truth: fetches only the repos that have a truth file.
+eval-routes:
+	$(UV) run python eval/tools/fetch_corpus.py $(basename $(notdir $(wildcard eval/corpus/truth/*.json)))
+	$(UV) run python eval/harness.py --routes --enforce-gates --out eval/reports/routes
+
+# Real-history replay of one corpus repo (precision check): make replay REPO=dispatch
+replay:
+	$(UV) run python eval/tools/replay_history.py $(REPO) --commits 300
 
 corpus:
 	$(UV) run python eval/tools/fetch_corpus.py

@@ -1,0 +1,5 @@
+id: m16_condition_strengthened
+kind: negative
+framework: fastapi
+description: "Adds a third rejection clause to require_admin (stricter, not weaker)."
+expected: []
