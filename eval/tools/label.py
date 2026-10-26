@@ -22,6 +22,8 @@ def main() -> int:
     for spec, note in zip(specs[::2], specs[1::2], strict=True):
         prefix, _, value = spec.partition("=")
         label, _, act = value.partition(":")
+        if label not in {"tp", "fp"} or act not in {"", "act"}:
+            raise SystemExit(f"{spec}: expected <prefix>=<tp|fp>[:act]")
         matches = {f["fingerprint"] for f in report["items"] if f["fingerprint"].startswith(prefix)}
         if len(matches) != 1:
             raise SystemExit(f"{prefix}: {len(matches)} matches")

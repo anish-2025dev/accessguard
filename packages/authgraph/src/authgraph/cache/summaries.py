@@ -7,8 +7,11 @@ App). The CLI uses an in-process dict, optionally backed by a directory (``AUTHG
 from __future__ import annotations
 
 import os
+import tempfile
 from pathlib import Path
 from typing import Protocol
+
+from pydantic import ValidationError
 
 from authgraph import ENGINE_VERSION
 from authgraph.lang.python.summary import FileSummary
@@ -51,8 +54,17 @@ class DirCache(MemoryCache):
         return v
 
     def set(self, key: str, value: str) -> None:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", dir=self.root, delete=False
+        ) as f:
+            temp = Path(f.name)
+            try:
+                f.write(value)
+                f.close()
+                os.replace(temp, self._file(key))
+            finally:
+                temp.unlink(missing_ok=True)
         super().set(key, value)
-        self._file(key).write_text(value, encoding="utf-8")
 
 
 def default_cache() -> SummaryCache:
@@ -62,4 +74,7 @@ def default_cache() -> SummaryCache:
 
 def load(cache: SummaryCache, key: str) -> FileSummary | None:
     raw = cache.get(key)
-    return FileSummary.model_validate_json(raw) if raw else None
+    try:
+        return FileSummary.model_validate_json(raw) if raw else None
+    except ValidationError:
+        return None

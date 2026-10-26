@@ -70,12 +70,7 @@ class Config(_Cfg):
 
     def guard_decl(self, symbol: str) -> GuardDecl | None:
         for g in self.auth_guards:
-            # Match the fully-qualified symbol or its trailing qualname (moved-module tolerant).
-            if (
-                symbol == g.symbol
-                or symbol.endswith("." + g.symbol)
-                or g.symbol.endswith("." + symbol)
-            ):
+            if symbol == g.symbol:
                 return g
         return None
 
