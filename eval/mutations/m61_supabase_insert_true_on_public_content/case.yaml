@@ -1,8 +1,0 @@
-id: m61_supabase_insert_true_on_public_content
-kind: positive
-framework: data
-description: "\"Service role can insert videos\" with no TO clause: anyone can insert rows every visitor reads. Stays deterministic (pilot true positive shape)."
-expected:
-  - rule_id: AG-DATA-001
-    key: "public.videos"
-    tier: deterministic

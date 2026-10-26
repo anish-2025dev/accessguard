@@ -156,9 +156,6 @@ class FakeGitHub:
             if p.is_file()
         ]
 
-    async def list_commit_pulls(self, installation_id: int, repo: str, sha: str) -> list[Json]:
-        return [p for p in self.repos[repo].pulls.values() if p["head"]["sha"] == sha]
-
     async def get_permission(self, installation_id: int, repo: str, username: str) -> str:
         return self.repos[repo].permissions.get(username, "read")
 

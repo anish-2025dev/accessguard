@@ -1,5 +1,0 @@
-id: m57_supabase_null_test_under_principal
-kind: negative
-framework: data
-description: "A posts insert policy tests a nullable column with IS NULL, but every branch also requires author = auth.uid(), so an anonymous caller never passes (pilot false-positive shape)."
-expected: []

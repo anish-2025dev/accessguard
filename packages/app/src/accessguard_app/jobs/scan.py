@@ -190,18 +190,6 @@ async def scan_pr(ctx: dict[str, Any], repo_id: int, pr: int, head_sha: str, gen
                 timings=timings,
             )
         metrics.SCANS.labels(trigger="pr", outcome=pub.conclusion).inc()
-        # A preview deployment that arrived before this scan finished (FR-2.5).
-        preview = await svc.redis.get(f"preview:{repo_id}:{head_sha}")
-        if preview:
-            await svc.queue.enqueue(
-                "verify_findings",
-                repo_id,
-                pr,
-                str(scan_id),
-                preview.decode() if isinstance(preview, bytes) else str(preview),
-                job_id=f"verify:{scan_id}",
-                queue="verify",
-            )
         return pub.conclusion
     except Superseded:
         metrics.SUPERSEDED.inc()

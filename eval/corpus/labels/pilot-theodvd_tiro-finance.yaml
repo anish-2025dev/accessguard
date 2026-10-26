@@ -1,5 +1,0 @@
-# Pilot hand labels (Phase 4). label=factual TP/FP; actionable=would a reviewer act.
-f392f702078d369f4332e3b6afbe40e3b41dd940b139cf532947a29c3eb303cb:
-  actionable: true
-  label: tp
-  note: _synchro_test table RLS off, anon/auth full CRUD (left in a migration)

@@ -16,19 +16,14 @@ def main() -> int:
     sb = sub.add_parser("supabase", help="replay supabase/migrations in a network-less Postgres")
     sb.add_argument("source")
     sb.add_argument("--image")
-    sb.add_argument("--probe", action="store_true", help="SET ROLE probes (FR-3.8b)")
     args = ap.parse_args()
-    result = PostgresSandbox(args.image).replay(open_tree(args.source), probe=args.probe)
+    result = PostgresSandbox(args.image).replay(open_tree(args.source))
     print(
         json.dumps(
             {
                 "files": result.files,
                 "errors": result.errors,
-                "exposures": [
-                    {**e.model_dump(mode="json"), "proven": sorted(result.proven(e))}
-                    for e in result.exposures
-                ],
-                "probes": [vars(p) for p in result.probes],
+                "exposures": [e.model_dump(mode="json") for e in result.exposures],
             },
             indent=2,
         )

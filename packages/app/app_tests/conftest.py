@@ -116,7 +116,7 @@ async def drain(
     svc: Services, *, include: set[str] | None = None, max_rounds: int = 20
 ) -> list[Any]:
     """Run queued jobs like a worker would, until the queue is empty."""
-    from accessguard_app.jobs import reconcile, router, scan, verify
+    from accessguard_app.jobs import reconcile, router, scan
 
     fns = {
         "route_delivery": router.route_delivery,
@@ -124,7 +124,6 @@ async def drain(
         "scan_push": scan.scan_push,
         "baseline_scan": scan.baseline_scan,
         "outbox_sweeper": reconcile.outbox_sweeper,
-        "verify_findings": verify.verify_findings,
     }
     q = svc.queue
     assert isinstance(q, InMemoryQueue)

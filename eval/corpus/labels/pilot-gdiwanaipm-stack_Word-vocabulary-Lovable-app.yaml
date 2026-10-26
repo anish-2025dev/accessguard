@@ -1,5 +1,0 @@
-# Pilot hand labels (Phase 4). label=factual TP/FP; actionable=would a reviewer act.
-ae765128a173a31aca26ef6310387d326c615dca9ca1d013cd58804a59b2c61d:
-  actionable: false
-  label: tp
-  note: 'session_feedback: public insert feedback form, not readable back'

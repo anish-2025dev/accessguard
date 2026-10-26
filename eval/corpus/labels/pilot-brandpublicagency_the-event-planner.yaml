@@ -1,5 +1,0 @@
-# Pilot hand labels (Phase 4). label=factual TP/FP; actionable=would a reviewer act.
-ce462ea660b2e779d6dc593dcd58a0b9b15f45888aca00ef42496e3f10fcabd2:
-  actionable: true
-  label: tp
-  note: 'event_activity_log: any authenticated user can delete/modify the audit log'

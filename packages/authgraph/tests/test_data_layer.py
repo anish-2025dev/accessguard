@@ -46,7 +46,7 @@ def test_supabase_catalog_checks(tmp_path: Path) -> None:
         ("public.profiles", "public", "null_fail_open"),
         ("public.audit", "anon", "rls_disabled"),
         ("public.audit", "authenticated", "rls_disabled"),
-        ("public.posts", "anon", "write_only_insert"),
+        ("public.posts", "anon", "policy_true_write"),
         ("public.leak", "anon", "security_definer_view"),
     }
 

@@ -16,17 +16,15 @@ from typing import Any, ClassVar
 
 import redis
 import redis.asyncio as aioredis
-from accessguard_verifier.vault import Vault, private_key_from_env
 from arq import Retry, cron
 from arq.connections import RedisSettings
 from arq.worker import func
 from authgraph.llm.litellm_judge import LiteLLMJudge
 
 from accessguard_app.db.session import make_engine, make_sessionmaker
-from accessguard_app.domain.verifier_store import DbCredentialStore
 from accessguard_app.github.githubkit_adapter import GitHubKitAdapter
 from accessguard_app.github.port import RateLimited
-from accessguard_app.jobs import reconcile, router, scan, verify
+from accessguard_app.jobs import reconcile, router, scan
 from accessguard_app.logging_setup import configure_logging
 from accessguard_app.runtime import ArqEnqueuer, Services
 from accessguard_app.settings import get_settings
@@ -99,22 +97,4 @@ class LowWorker:
     on_startup = startup
     on_shutdown = shutdown
     max_jobs = 2  # per-installation fairness is enforced by the token budget in baseline_scan
-    redis_settings = _redis()
-
-
-async def verifier_startup(ctx: dict[str, Any]) -> None:
-    """The verifier worker is the only process given the vault's private key (ADR 015)."""
-    await startup(ctx)
-    svc: Services = ctx["services"]
-    ctx["vault"] = Vault(private_key_from_env(), DbCredentialStore(svc.sessions))
-
-
-class VerifyWorker:
-    queue_name = "arq:verify"
-    functions: ClassVar[list[Any]] = [
-        func(_job(verify.verify_findings), name="verify_findings", max_tries=2, timeout=600),
-    ]
-    on_startup = verifier_startup
-    on_shutdown = shutdown
-    max_jobs = 2
     redis_settings = _redis()

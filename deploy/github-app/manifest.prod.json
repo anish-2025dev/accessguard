@@ -8,17 +8,13 @@
     "pull_requests": "write",
     "checks": "write",
     "issues": "write",
-    "metadata": "read",
-    "deployments": "read",
-    "statuses": "read"
+    "metadata": "read"
   },
   "default_events": [
     "pull_request",
     "push",
     "issue_comment",
-    "check_run",
-    "deployment_status",
-    "status"
+    "check_run"
   ],
   "public": true,
   "hook_attributes": {

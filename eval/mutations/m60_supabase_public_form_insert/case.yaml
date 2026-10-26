@@ -1,8 +1,0 @@
-id: m60_supabase_public_form_insert
-kind: positive
-framework: data
-description: "A contact form table: anyone may insert any row, only admins can read. Reported at heuristic tier (check run, not inline): spam risk, no data leak (pilot shape)."
-expected:
-  - rule_id: AG-DATA-001
-    key: "public.inquiries"
-    tier: heuristic

@@ -1,5 +1,0 @@
-# Pilot hand labels (Phase 4). label=factual TP/FP; actionable=would a reviewer act.
-c6a026ba1499a88c8d013d658657346032790be71c2e67cfdf7d11d64b0da951:
-  actionable: true
-  label: tp
-  note: roasts world-writable+deletable on a deployed app (dev marked it single-user)

@@ -1,9 +1,0 @@
-# Pilot hand labels (Phase 4). label=factual TP/FP; actionable=would a reviewer act.
-5f69e7a5fefb83f9f1990b0f12e1c8210fdd95ba83ecdde4743792511ccaeca8:
-  actionable: false
-  label: tp
-  note: 'submission form: public insert by design, admin-only read'
-cd5cafb99d11407a076df0dc008ffc89e345a50f88818636a515e288f1dc2b9d:
-  actionable: false
-  label: tp
-  note: 'contact form: public insert by design, rows not readable back'
