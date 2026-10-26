@@ -1,0 +1,5 @@
+id: m36_new_read_on_role_free_router
+kind: negative
+framework: fastapi
+description: "Adds GET /staff/health next to GET /staff/stats; reads on this router are authentication only, so there is no role pattern to deviate from."
+expected: []

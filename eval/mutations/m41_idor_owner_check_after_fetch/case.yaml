@@ -1,0 +1,5 @@
+id: m41_idor_owner_check_after_fetch
+kind: negative
+framework: fastapi
+description: "Adds PATCH /items/{item_id} that fetches by id and then rejects other users with 403."
+expected: []

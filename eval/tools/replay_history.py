@@ -1,8 +1,8 @@
 """Replay a corpus repo's real history through ``authgraph diff`` (real-world precision check).
 
-Every commit that touches Python or .accessguard.yml is diffed against its first parent, as a push
-to main would be. Findings are written to eval/reports/replay-<name>.json for hand labelling in
-eval/corpus/labels/<name>.yaml:
+Every commit that touches source, SQL, rules, env files or .accessguard.yml is diffed against
+its first parent, exactly as a push to main would be. Findings are written to
+eval/reports/replay-<name>.json for hand labelling in eval/corpus/labels/<name>.yaml:
 
     <fingerprint>: {label: tp | fp, actionable: true | false, note: "..."}
 
@@ -27,6 +27,24 @@ from authgraph.cache.summaries import MemoryCache
 from authgraph.workspace.tree import GitTree
 
 EVAL = Path(__file__).resolve().parents[1]
+SOURCES = (
+    "*.py",
+    "*.js",
+    "*.jsx",
+    "*.mjs",
+    "*.cjs",
+    "*.ts",
+    "*.tsx",
+    "*.mts",
+    "*.cts",
+    "*.sql",
+    "*.rules",
+    "*.rules.json",
+    "*.vue",
+    "*.svelte",
+    ".env*",
+    ".accessguard.yml",
+)
 
 
 def git(repo: Path, *args: str) -> str:
@@ -44,14 +62,7 @@ def main() -> int:
     if git(repo, "rev-parse", "--is-shallow-repository").strip() == "true":
         git(repo, "fetch", "-q", "--unshallow", "origin")
     shas = git(
-        repo,
-        "rev-list",
-        "--first-parent",
-        f"--max-count={args.commits}",
-        "HEAD",
-        "--",
-        "*.py",
-        ".accessguard.yml",
+        repo, "rev-list", "--first-parent", f"--max-count={args.commits}", "HEAD", "--", *SOURCES
     ).split()
     cache = MemoryCache()
     out, timings = [], []

@@ -1,0 +1,121 @@
+# Hand labels for eval/tools/replay_history.py (see its docstring).
+00b9d22ad5272d7ff74540ebf21a8db6cc6d1ec95074c81c53f740354369327e:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+04cef5de74105f6b6a3eeb34ca533e1739040ac5e8df8c7ca8ee0d6fdae071df:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+0dd6b09d132f3d818f52000e30b83cf574618ce661621010c34642b52851f9ec:
+  actionable: false
+  label: tp
+  note: rule grants unconditional write (codelab sample; intended, not actionable)
+0f430f15b3dc67c8a0bcb8ca898efe552c9dbbb905aa22b04e8fb2cad4a16002:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+1243f011ca538eb7c225fa27e926ccbc7a1a89a8d581440848f0b509f882ee68:
+  actionable: false
+  label: tp
+  note: rule grants unconditional write (codelab sample; intended, not actionable)
+28b399fda2e98005f74a31aaf77ffe2e97779c05e71d92f57f0df7a3e3c19e3e:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+29c7aa3120a7c0410dad1f3c29fa82c72a079016a5c7b15ee0e9dbba0108d675:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+30682d5d98a89e6cfa6cac5f7ff796b518718024fc2f4d0557f8d0cdfc6e68fc:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+38eb1f318c1888ad7ff499a4194bce22b4d1eb32ea53db74cd2614f344c4c6f9:
+  actionable: false
+  label: tp
+  note: rule grants unconditional write (codelab sample; intended, not actionable)
+41cab5d866094842dfed1c9670d0741521f9399d1418df958052352708367ee5:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+42b0371168f9fe88a1b06495caa9bbf336bd4e2ae5ad4e5326d7dfa84d425647:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+46ca792d962e60ccc82c4a900b727e94d609cb686025a60a8bcf68fa06b96619:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+547423de7d6f7fedacee1b1fe806760502accf0babf07bcaf6e9b2ee4c6bfe3b:
+  actionable: false
+  label: tp
+  note: rule grants unconditional write (codelab sample; intended, not actionable)
+7beb467dfa56b1a07d9d45702766a01e151e0b337e69919bdd3554ebbbc27e30:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+812100aad70446daf31e63e9ea7700251a2c56b48fc3d7c2fb84f852f2ded8f5:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+83663c7d324fa832cd5bccf5527ea0dcae8f6d57bc89da12a969b69e6c819226:
+  actionable: false
+  label: tp
+  note: rule grants unconditional write (codelab sample; intended, not actionable)
+86351f3561f81e03953683ebf202cd3301d429bb4870d128022d0a97efd25733:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+8ba537c471603a771b9563595c27a26b227f1aeecf4275bef728659936cd3000:
+  actionable: false
+  label: tp
+  note: rule grants unconditional write (codelab sample; intended, not actionable)
+90d11bb0fafb9109a3e1ce027fe263bc9fda15c4ef0f380740b34fcab3f84fa4:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+9f08dc671f9b380b2ae7ebf9cd4c8e0b85f32a9738a4e53e5f8fbe9bf89fb9f0:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+ae93f5908503a6b031a9e9e3a637ff9ade1faa278d7886c2a58e4dbc3ecde128:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+ca31b79d7d7171791cc07b4270a7a89df3db28ed47b2c99658e41fcc7a49a831:
+  actionable: false
+  label: tp
+  note: rule grants unconditional write (codelab sample; intended, not actionable)
+ca62f43961159012ef75ea0fe62bd369f98b5f7d345ea6370e73eb6b75e3e211:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+d4a835795dff8f34a815e7b104d3ab2edb983f8355fd6311b962f109c14f9eb7:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+e0e2d94374377df278df465363e44c004e49062ebbf7c0008004cf124c107ebf:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+e8fd95dda7a4d02d676b60d5232081ab6ec29d4d1cc846cae7733ac6158184f2:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+ee72cc62a407995e514a60dbb8efe9ea7dcbfb9dc3df6377795fc4d719418fb5:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+f3c54c1ef65d3665f44b833961ddc7a1e0fe315ad715f674f35de3c62810448c:
+  actionable: false
+  label: tp
+  note: rule grants unconditional write (codelab sample; intended, not actionable)
+f8335e57e242953d23e1f2c4db32f526ccf7ee037eafd921e70be6f71475b5be:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+fc3381a616b0ecea5e5cee9d43fac5a59bc113aead14961fbfdb49baad36e549:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app

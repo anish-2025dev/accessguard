@@ -1,0 +1,7 @@
+id: m48_supabase_view_bypasses_rls
+kind: positive
+framework: data
+description: "Adds a view over public.profiles without security_invoker."
+expected:
+  - rule_id: AG-DATA-001
+    key: "public.profile_names"

@@ -1,0 +1,7 @@
+id: m50_firebase_rule_opened
+kind: positive
+framework: data
+description: "Opens the users collection to everyone."
+expected:
+  - rule_id: AG-DATA-003
+    key: "firestore.rules:/users/{userId}"

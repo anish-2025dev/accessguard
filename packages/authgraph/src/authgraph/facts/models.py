@@ -81,15 +81,26 @@ class Endpoint(_Model):
     # Mass assignment of privileged fields from the request body (AG-ROLE-002).
     mass_assign_fields: list[str] = Field(default_factory=list)
     router_group: str = ""  # router identity, used for peer-group comparisons
+    # Names in the handler that hold the authenticated principal (FR-3.3 IDOR).
+    principals: list[str] = Field(default_factory=list)
+    # The handler or a callee compares the principal with a fetched object (owner check).
+    owner_check: bool = False
+    # Express: auth middleware that covers this path but is registered after the route, so it
+    # never runs for it (PLAN.md §6.4 guard chain).
+    late_guards: list[GuardRef] = Field(default_factory=list)
+    # Express: a route registration made only of middleware (``app.get(p, isAuthorized())``)
+    # whose final handler is registered dynamically elsewhere.
+    guard_only: bool = False
 
 
 class DataExposure(_Model):  # Supabase / Firebase
-    resource: str
-    role: str
+    resource: str  # "public.notes", "firestore:/users/{uid}"
+    role: str  # who gets access: "anon", "authenticated", "public"
     ops: set[str]
-    reason: str
-    proven: bool = False
+    reason: str  # rls_disabled, policy_true_write, security_definer_view, null_fail_open, ...
+    proven: bool = False  # confirmed by a sandbox probe (Phase 4)
     loc: Loc
+    detail: str = ""  # the policy / rule text that grants it (never secret values)
 
 
 class SecretExposure(_Model):

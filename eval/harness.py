@@ -124,7 +124,9 @@ def route_recall(truth_dir: Path = EVAL_DIR / "corpus" / "truth") -> dict[str, A
     for tf in sorted(truth_dir.glob("*.json")):
         data = json.loads(tf.read_text(encoding="utf-8"))
         truth = {
-            (r["method"], r["path"]) for r in data.get("routes", []) if r["kind"] == "APIRoute"
+            (r["method"], r["path"])
+            for r in data.get("routes", [])
+            if r["kind"] in {"APIRoute", "ExpressRoute"}
         }
         checkout = EVAL_DIR / "corpus" / "checkouts" / tf.stem
         if not truth or not checkout.is_dir():

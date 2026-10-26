@@ -1,0 +1,7 @@
+id: m33_role_peer_inconsistency
+kind: positive
+framework: fastapi
+description: "Adds POST /staff/broadcast with authentication only; the four other write routes on the staff router all require_admin."
+expected:
+  - rule_id: AG-ROLE-001
+    key: "POST /staff/broadcast"

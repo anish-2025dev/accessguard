@@ -3,17 +3,18 @@ name = "accessguard-workspace"
 version = "0.0.0"
 description = "AccessGuard monorepo root (not published)"
 requires-python = ">=3.12"
-dependencies = ["authgraph", "accessguard-app"]
+dependencies = ["authgraph", "accessguard-app", "accessguard-sandbox"]
 
 [tool.uv]
 package = false
 
 [tool.uv.workspace]
-members = ["packages/authgraph", "packages/app"]
+members = ["packages/authgraph", "packages/app", "packages/sandbox"]
 
 [tool.uv.sources]
 authgraph = { workspace = true }
 accessguard-app = { workspace = true }
+accessguard-sandbox = { workspace = true }
 
 [dependency-groups]
 dev = [
@@ -41,6 +42,8 @@ ignore = ["S101"]  # asserts are fine in tests
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = ["S", "E501"]
 "**/app_tests/**" = ["S", "E501"]
+"**/sandbox_tests/**" = ["S", "E501"]
+"packages/sandbox/src/**" = ["S603", "S607"]  # drives the docker CLI with fixed argv
 "eval/**" = ["S603", "S607"]
 "eval/tools/gen_mutations.py" = ["E501"]  # fixture source text
 "deploy/github-app/register.py" = ["E501"]  # inline HTML template and doc URLs
@@ -55,10 +58,15 @@ module = ["authgraph.*"]
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["z3"]
+module = ["z3", "litellm"]  # litellm: optional extra, not installed by default
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-testpaths = ["packages/authgraph/tests", "packages/app/app_tests", "eval/tests"]
+testpaths = [
+    "packages/authgraph/tests",
+    "packages/app/app_tests",
+    "packages/sandbox/sandbox_tests",
+    "eval/tests",
+]
 asyncio_mode = "auto"
 addopts = "--import-mode=importlib"

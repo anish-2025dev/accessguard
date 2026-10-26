@@ -1,0 +1,7 @@
+id: m46_supabase_update_policy_true
+kind: positive
+framework: data
+description: "Replaces the owner check of the posts insert policy with true for anon."
+expected:
+  - rule_id: AG-DATA-001
+    key: "public.posts"

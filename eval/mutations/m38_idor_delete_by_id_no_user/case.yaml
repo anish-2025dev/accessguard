@@ -1,0 +1,7 @@
+id: m38_idor_delete_by_id_no_user
+kind: positive
+framework: fastapi
+description: "Adds DELETE /items/{item_id} that deletes by id without any reference to the current user (the router is authenticated, so any user can delete any item)."
+expected:
+  - rule_id: AG-IDOR-001
+    key: "DELETE /items/{item_id}"

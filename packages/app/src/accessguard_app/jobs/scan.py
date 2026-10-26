@@ -19,6 +19,7 @@ from authgraph.api import DiffResult, diff_trees
 from authgraph.cache.summaries import MemoryCache, SummaryCache
 from authgraph.engine import analyze
 from authgraph.guards.config import CONFIG_FILE, Config, parse_config
+from authgraph.llm.triage import apply_triage
 from authgraph.workspace.tree import DirectoryTree
 
 from accessguard_app import metrics
@@ -91,6 +92,16 @@ async def run_diff(
         )
         timings["analyze"] = time.perf_counter() - t
         metrics.SCAN_PHASE.labels(phase="analyze").observe(timings["analyze"])
+        # LLM triage is opt-in per repository (base-branch `llm.provider`, PLAN.md §6.11):
+        # code slices only leave the worker when the repository asked for it.
+        if svc.judge is not None and cfg.llm.provider != "off" and result.findings:
+            # Downgrade/suppress only (ADR 011); the head checkout is the judge's only source.
+            t = time.perf_counter()
+            out = await apply_triage(
+                result.findings, svc.judge, DirectoryTree(h), svc.settings.llm_samples
+            )
+            result.findings, result.suppressed = out.kept, out.suppressed
+            timings["triage"] = time.perf_counter() - t
     return result
 
 
@@ -154,6 +165,7 @@ async def scan_pr(ctx: dict[str, Any], repo_id: int, pr: int, head_sha: str, gen
             fail_on=cfg.fail_on,
             endpoints=cov.endpoints,
             unknown=cov.unknown,
+            suppressed=len(result.suppressed),
         )
         timings["report"] = time.perf_counter() - t
         await _check_generation(svc, repo_id, pr, gen)

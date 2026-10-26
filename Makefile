@@ -2,7 +2,7 @@
 UV ?= uv
 BASELINE ?=
 
-.PHONY: install test lint format typecheck check eval eval-gates eval-routes corpus route-truth fixtures replay
+.PHONY: install test lint format typecheck check eval eval-gates eval-routes eval-triage corpus route-truth fixtures replay
 
 install:
 	$(UV) sync
@@ -19,7 +19,7 @@ format:
 	$(UV) run ruff check --fix .
 
 typecheck:
-	$(UV) run mypy --strict packages/authgraph
+	$(UV) run mypy --strict packages/authgraph packages/app/src packages/sandbox/src
 
 check: lint typecheck test
 
@@ -32,6 +32,10 @@ eval-gates:
 	$(UV) run python eval/harness.py --enforce-gates $(if $(BASELINE),--baseline $(BASELINE))
 
 # Route recall vs sandbox ground truth: fetches only the repos that have a truth file.
+# Triage TP retention (Phase 3 gate >= 96%); MODEL=<litellm model> needs `uv sync --extra llm`.
+eval-triage:
+	$(UV) run python eval/tools/triage_eval.py $(if $(MODEL),--model $(MODEL),)
+
 eval-routes:
 	$(UV) run python eval/tools/fetch_corpus.py $(basename $(notdir $(wildcard eval/corpus/truth/*.json)))
 	$(UV) run python eval/harness.py --routes --enforce-gates --out eval/reports/routes

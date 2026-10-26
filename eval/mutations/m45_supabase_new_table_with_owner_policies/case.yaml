@@ -1,0 +1,5 @@
+id: m45_supabase_new_table_with_owner_policies
+kind: negative
+framework: data
+description: "A migration adds public.notes with RLS and owner-only policies."
+expected: []

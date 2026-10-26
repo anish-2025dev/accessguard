@@ -19,6 +19,7 @@ import redis.asyncio as aioredis
 from arq import Retry, cron
 from arq.connections import RedisSettings
 from arq.worker import func
+from authgraph.llm.litellm_judge import LiteLLMJudge
 
 from accessguard_app.db.session import make_engine, make_sessionmaker
 from accessguard_app.github.githubkit_adapter import GitHubKitAdapter
@@ -58,6 +59,7 @@ async def startup(ctx: dict[str, Any]) -> None:
         github=GitHubKitAdapter(s),
         queue=ArqEnqueuer(ctx["redis"]),
         sync_redis=redis.Redis.from_url(s.redis_url),
+        judge=LiteLLMJudge(s.llm_model) if s.llm_model else None,
     )
 
 

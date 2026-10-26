@@ -1,0 +1,9 @@
+id: m26_express_admin_middleware_removed
+kind: positive
+framework: express
+description: "Removes router.use(requireAdmin) from the admin router; authentication alone remains."
+expected:
+  - rule_id: AG-AUTH-002
+    key: "GET /api/admin/users"
+  - rule_id: AG-AUTH-002
+    key: "DELETE /api/admin/users/:id"

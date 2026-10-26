@@ -1,0 +1,111 @@
+{
+  "app": "src/main.ts",
+  "apps": 1,
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/api/tags",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/articles",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/articles/feed",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/articles",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/articles/:slug",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/articles/:slug",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/articles/:slug",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/articles/:slug/comments",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/articles/:slug/comments",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/articles/:slug/comments/:id",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/articles/:slug/favorite",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/articles/:slug/favorite",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/profiles/:username",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/profiles/:username/follow",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/profiles/:username/follow",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/user",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/user",
+      "kind": "ExpressRoute"
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "kind": "ExpressRoute"
+    }
+  ],
+  "errors": [
+    "stubbed @prisma/client: Cannot find module '.prisma/client/index'"
+  ],
+  "name": "node-express-realworld-example-app",
+  "ref": "30b68e1e881462b2f4164ea09ab4c4f5699c7b0b"
+}

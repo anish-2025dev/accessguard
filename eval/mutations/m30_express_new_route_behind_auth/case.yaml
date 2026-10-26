@@ -1,0 +1,5 @@
+id: m30_express_new_route_behind_auth
+kind: negative
+framework: express
+description: "Adds POST /api/items/:id/archive inside the authenticated items router."
+expected: []

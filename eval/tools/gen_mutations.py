@@ -1,4 +1,4 @@
-"""Regenerates eval/mutations/m*_* FastAPI fixtures. Usage: python eval/tools/gen_mutations.py eval/mutations"""
+"""Regenerates eval/mutations/m*_* FastAPI and Express fixtures. Usage: python eval/tools/gen_mutations.py eval/mutations"""
 
 import json
 import shutil
@@ -160,7 +160,9 @@ BASE = {
 CASES: list[dict] = []
 
 
-def case(cid, kind, desc, edits, expected, base_extra=None, base_override=None):
+def case(
+    cid, kind, desc, edits, expected, base_extra=None, base_override=None, framework="fastapi"
+):
     CASES.append(
         dict(
             id=cid,
@@ -170,6 +172,7 @@ def case(cid, kind, desc, edits, expected, base_extra=None, base_override=None):
             expected=expected,
             base_extra=base_extra or {},
             base_override=base_override,
+            framework=framework,
         )
     )
 
@@ -607,6 +610,765 @@ case(
 )
 
 
+# ---- Express (Phase 3) -----------------------------------------------------------------------
+EXPRESS = {
+    "package.json": d("""
+        {
+          "name": "express-fixture",
+          "private": true,
+          "dependencies": {"express": "^4.21.2", "express-jwt": "^8.5.1"}
+        }
+    """),
+    "src/auth.js": d("""
+        const { expressjwt } = require('express-jwt');
+
+        const requireAuth = expressjwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] });
+
+        function requireAdmin(req, res, next) {
+          if (!req.auth || req.auth.role !== 'admin') {
+            return res.status(403).json({ error: 'forbidden' });
+          }
+          next();
+        }
+
+        module.exports = { requireAuth, requireAdmin };
+    """),
+    "src/routes/items.js": d("""
+        const express = require('express');
+
+        const router = express.Router();
+
+        router.get('/', (req, res) => res.json([]));
+        router.get('/:id', (req, res) => res.json({ id: req.params.id }));
+        router.post('/', (req, res) => res.status(201).json(req.body));
+        router.delete('/:id', (req, res) => res.status(204).end());
+
+        module.exports = router;
+    """),
+    "src/routes/admin.js": d("""
+        const express = require('express');
+        const { requireAdmin } = require('../auth');
+
+        const router = express.Router();
+        router.use(requireAdmin);
+
+        router.get('/users', (req, res) => res.json([]));
+        router.delete('/users/:id', (req, res) => res.status(204).end());
+
+        module.exports = router;
+    """),
+    "src/routes/public.js": d("""
+        const express = require('express');
+
+        const router = express.Router();
+
+        router.get('/health', (req, res) => res.json({ ok: true }));
+        router.get('/docs', (req, res) => res.send('docs'));
+
+        module.exports = router;
+    """),
+    "src/routes/reports.js": d("""
+        const express = require('express');
+        const { requireAuth } = require('../auth');
+
+        const router = express.Router();
+
+        router.get('/', requireAuth, (req, res) => res.json([]));
+
+        module.exports = router;
+    """),
+    "src/routes/orders.ts": d("""
+        import { Request, Response, Router } from 'express';
+        import { requireAuth } from '../auth';
+
+        const router = Router();
+
+        function getOrder(req: Request, res: Response) {
+          res.json({ id: req.params.id });
+        }
+
+        function deleteOrder(req: Request, res: Response) {
+          res.status(204).end();
+        }
+
+        router.route('/:id').get(requireAuth, getOrder).delete(requireAuth, deleteOrder);
+
+        export default router;
+    """),
+    "src/app.js": d("""
+        const express = require('express');
+        const { requireAuth } = require('./auth');
+        const items = require('./routes/items');
+        const admin = require('./routes/admin');
+        const publicRoutes = require('./routes/public');
+        const reports = require('./routes/reports');
+        const orders = require('./routes/orders').default;
+
+        const app = express();
+        app.use(express.json());
+
+        app.use('/public', publicRoutes);
+        app.use('/reports', reports);
+        app.use('/orders', orders);
+
+        app.use('/api', requireAuth);
+        app.use('/api/items', items);
+        app.use('/api/admin', admin);
+
+        module.exports = app;
+    """),
+}
+EXPRESS_ITEMS = ["GET /api/items", "GET /api/items/:id", "POST /api/items", "DELETE /api/items/:id"]
+
+case(
+    "m23_express_route_before_auth_middleware",
+    "positive",
+    "Registers POST /api/export on the app before app.use('/api', requireAuth).",
+    [
+        replace(
+            "src/app.js",
+            "app.use('/api', requireAuth);\n",
+            "app.post('/api/export', (req, res) => res.json({ rows: [] }));\n"
+            "app.use('/api', requireAuth);\n",
+        )
+    ],
+    [("AG-AUTH-003", "POST /api/export")],
+    base_override=EXPRESS,
+    framework="express",
+)
+case(
+    "m24_express_router_mounted_before_auth",
+    "positive",
+    "Moves the items router mount above the /api auth middleware.",
+    [
+        replace(
+            "src/app.js",
+            "app.use('/api', requireAuth);\napp.use('/api/items', items);\n",
+            "app.use('/api/items', items);\napp.use('/api', requireAuth);\n",
+        )
+    ],
+    [("AG-AUTH-002", k) for k in EXPRESS_ITEMS],
+    base_override=EXPRESS,
+    framework="express",
+)
+case(
+    "m25_express_route_guard_removed",
+    "positive",
+    "Drops requireAuth from the reports route.",
+    [replace("src/routes/reports.js", "router.get('/', requireAuth, (req", "router.get('/', (req")],
+    [("AG-AUTH-002", "GET /reports")],
+    base_override=EXPRESS,
+    framework="express",
+)
+case(
+    "m26_express_admin_middleware_removed",
+    "positive",
+    "Removes router.use(requireAdmin) from the admin router; authentication alone remains.",
+    [replace("src/routes/admin.js", "router.use(requireAdmin);\n", "")],
+    [("AG-AUTH-002", "GET /api/admin/users"), ("AG-AUTH-002", "DELETE /api/admin/users/:id")],
+    base_override=EXPRESS,
+    framework="express",
+)
+case(
+    "m27_express_new_public_get",
+    "negative",
+    "Adds GET /public/version to the public router.",
+    [
+        replace(
+            "src/routes/public.js",
+            "module.exports = router;",
+            "router.get('/version', (req, res) => res.json({ v: 1 }));\n\nmodule.exports = router;",
+        )
+    ],
+    [],
+    base_override=EXPRESS,
+    framework="express",
+)
+case(
+    "m28_express_guard_moved_to_router_use",
+    "negative",
+    "Replaces the per-route requireAuth with router.use(requireAuth): same protection.",
+    [
+        replace(
+            "src/routes/reports.js",
+            "router.get('/', requireAuth, (req",
+            "router.use(requireAuth);\nrouter.get('/', (req",
+        )
+    ],
+    [],
+    base_override=EXPRESS,
+    framework="express",
+)
+case(
+    "m29_express_unless_exempts_collection",
+    "positive",
+    "Exempts /api/items from the JWT middleware with express-unless.",
+    [
+        replace(
+            "src/app.js",
+            "app.use('/api', requireAuth);",
+            "app.use('/api', requireAuth.unless({ path: ['/api/items'] }));",
+        )
+    ],
+    [("AG-AUTH-002", "GET /api/items"), ("AG-AUTH-002", "POST /api/items")],
+    base_override=EXPRESS,
+    framework="express",
+)
+case(
+    "m30_express_new_route_behind_auth",
+    "negative",
+    "Adds POST /api/items/:id/archive inside the authenticated items router.",
+    [
+        replace(
+            "src/routes/items.js",
+            "module.exports = router;",
+            "router.post('/:id/archive', (req, res) => res.status(202).end());\n\nmodule.exports = router;",
+        )
+    ],
+    [],
+    base_override=EXPRESS,
+    framework="express",
+)
+case(
+    "m31_express_jwt_made_optional",
+    "positive",
+    "Sets credentialsRequired: false on the shared JWT middleware; admin routes keep their role "
+    "check, every other route that used it opens up.",
+    [
+        replace(
+            "src/auth.js",
+            "algorithms: ['HS256'] });",
+            "algorithms: ['HS256'], credentialsRequired: false });",
+        )
+    ],
+    [("AG-AUTH-002", k) for k in EXPRESS_ITEMS]
+    + [
+        ("AG-AUTH-002", "GET /reports"),
+        ("AG-AUTH-002", "GET /orders/:id"),
+        ("AG-AUTH-002", "DELETE /orders/:id"),
+    ],
+    base_override=EXPRESS,
+    framework="express",
+)
+case(
+    "m32_express_ts_route_chain_guard_removed",
+    "positive",
+    "TypeScript router.route() chain: drops requireAuth from the DELETE handler only.",
+    [replace("src/routes/orders.ts", ".delete(requireAuth, deleteOrder)", ".delete(deleteOrder)")],
+    [("AG-AUTH-002", "DELETE /orders/:id")],
+    base_override=EXPRESS,
+    framework="express",
+)
+
+
+# ---- AG-ROLE-001 role consistency (Phase 3) ---------------------------------------------------
+STAFF = {
+    "app/routers/staff.py": d("""
+        from fastapi import APIRouter, Depends
+
+        from app.deps import get_current_user, require_admin
+
+        router = APIRouter()
+
+
+        @router.post("/announcements")
+        def announce(admin=Depends(require_admin)):
+            return {}
+
+
+        @router.put("/settings")
+        def update_settings(admin=Depends(require_admin)):
+            return {}
+
+
+        @router.patch("/quotas")
+        def update_quotas(admin=Depends(require_admin)):
+            return {}
+
+
+        @router.delete("/sessions")
+        def revoke_sessions(admin=Depends(require_admin)):
+            return {}
+
+
+        @router.get("/stats")
+        def stats(user=Depends(get_current_user)):
+            return {}
+    """),
+    "app/main.py": d("""
+        from fastapi import Depends, FastAPI
+
+        from app.deps import get_current_user
+        from app.routers import admin, items, public, staff, users
+
+        app = FastAPI(title="Example")
+        app.include_router(public.router)
+        app.include_router(items.router, prefix="/items", dependencies=[Depends(get_current_user)])
+        app.include_router(users.router, prefix="/users", dependencies=[Depends(get_current_user)])
+        app.include_router(admin.router, prefix="/admin")
+        app.include_router(staff.router, prefix="/staff")
+    """),
+}
+STAFF_ROUTE = (
+    '\n\n@router.post("/broadcast")\ndef broadcast(user=Depends({dep})):\n    return {{}}\n'
+)
+
+case(
+    "m33_role_peer_inconsistency",
+    "positive",
+    "Adds POST /staff/broadcast with authentication only; the four other write routes on the "
+    "staff router all require_admin.",
+    [("write_append", "app/routers/staff.py", STAFF_ROUTE.format(dep="get_current_user"))],
+    [("AG-ROLE-001", "POST /staff/broadcast")],
+    base_extra=STAFF,
+)
+case(
+    "m34_role_peer_consistent",
+    "negative",
+    "Adds POST /staff/broadcast with require_admin, like its peers.",
+    [("write_append", "app/routers/staff.py", STAFF_ROUTE.format(dep="require_admin"))],
+    [],
+    base_extra=STAFF,
+)
+case(
+    "m35_admin_path_write_without_role",
+    "positive",
+    "Adds POST /admin/broadcast to the admin router with authentication only (absolute rule: "
+    "too few peers for statistics).",
+    [
+        (
+            "write_append",
+            "app/routers/admin.py",
+            '\n\n@router.post("/broadcast")\n'
+            "def broadcast(user=Depends(get_current_user)):\n    return {}\n",
+        ),
+        replace(
+            "app/routers/admin.py",
+            "from app.deps import require_admin",
+            "from app.deps import get_current_user, require_admin",
+        ),
+    ],
+    [("AG-ROLE-001", "POST /admin/broadcast")],
+)
+case(
+    "m36_new_read_on_role_free_router",
+    "negative",
+    "Adds GET /staff/health next to GET /staff/stats; reads on this router are authentication "
+    "only, so there is no role pattern to deviate from.",
+    [
+        (
+            "write_append",
+            "app/routers/staff.py",
+            '\n\n@router.get("/health")\ndef health(user=Depends(get_current_user)):\n'
+            "    return {}\n",
+        )
+    ],
+    [],
+    base_extra=STAFF,
+)
+EXPRESS_STAFF = {
+    "src/routes/staff.js": d("""
+        const express = require('express');
+        const { requireAdmin } = require('../auth');
+
+        const router = express.Router();
+
+        router.post('/announcements', requireAdmin, (req, res) => res.json({}));
+        router.put('/settings', requireAdmin, (req, res) => res.json({}));
+        router.patch('/quotas', requireAdmin, (req, res) => res.json({}));
+        router.delete('/sessions', requireAdmin, (req, res) => res.status(204).end());
+
+        module.exports = router;
+    """),
+}
+case(
+    "m37_express_role_peer_inconsistency",
+    "positive",
+    "Adds POST /api/staff/broadcast without requireAdmin; its four write peers have it.",
+    [
+        replace(
+            "src/routes/staff.js",
+            "module.exports = router;",
+            "router.post('/broadcast', (req, res) => res.json({}));\n\nmodule.exports = router;",
+        ),
+    ],
+    [("AG-ROLE-001", "POST /api/staff/broadcast")],
+    base_override={
+        **EXPRESS,
+        **EXPRESS_STAFF,
+        "src/app.js": EXPRESS["src/app.js"].replace(
+            "app.use('/api/admin', admin);\n",
+            "app.use('/api/admin', admin);\napp.use('/api/staff', require('./routes/staff'));\n",
+        ),
+    },
+    framework="express",
+)
+
+
+# ---- AG-IDOR-001/002 object-level authorization (Phase 3) ------------------------------------
+def items_route(code):
+    return ("write_append", "app/routers/items.py", "\n\n" + d(code))
+
+
+ITEMS_IMPORT = replace(
+    "app/routers/items.py",
+    "from fastapi import APIRouter, Depends",
+    "from fastapi import APIRouter, Depends, HTTPException",
+)
+case(
+    "m38_idor_delete_by_id_no_user",
+    "positive",
+    "Adds DELETE /items/{item_id} that deletes by id without any reference to the current user "
+    "(the router is authenticated, so any user can delete any item).",
+    [
+        items_route("""
+            @router.delete("/{item_id}")
+            def delete_item(item_id: int, db=Depends(get_db)):
+                db.query(Item).filter(Item.id == item_id).delete()
+                db.commit()
+        """)
+    ],
+    [("AG-IDOR-001", "DELETE /items/{item_id}")],
+)
+case(
+    "m39_idor_through_service_function",
+    "positive",
+    "Adds POST /items/{item_id}/archive whose id reaches the update in a service function.",
+    [
+        (
+            "write",
+            "app/services.py",
+            d("""
+            from app.models import Item
+
+
+            def archive(db, item_id):
+                db.query(Item).filter(Item.id == item_id).update({"title": "archived"})
+                db.commit()
+        """),
+        ),
+        items_route("""
+            @router.post("/{item_id}/archive")
+            def archive_item(item_id: int, db=Depends(get_db)):
+                services.archive(db, item_id)
+        """),
+        replace(
+            "app/routers/items.py",
+            "from app.db import get_db",
+            "from app import services\nfrom app.db import get_db",
+        ),
+    ],
+    [("AG-IDOR-001", "POST /items/{item_id}/archive")],
+)
+case(
+    "m40_idor_scoped_lookup",
+    "negative",
+    "Adds DELETE /items/{item_id} scoped to the current user in the filter.",
+    [
+        items_route("""
+            @router.delete("/{item_id}")
+            def delete_item(item_id: int, user: User = Depends(get_current_user), db=Depends(get_db)):
+                db.query(Item).filter(Item.id == item_id, Item.owner_id == user.id).delete()
+                db.commit()
+        """)
+    ],
+    [],
+)
+case(
+    "m41_idor_owner_check_after_fetch",
+    "negative",
+    "Adds PATCH /items/{item_id} that fetches by id and then rejects other users with 403.",
+    [
+        ITEMS_IMPORT,
+        items_route("""
+            @router.patch("/{item_id}")
+            def rename_item(
+                item_id: int, title: str, user: User = Depends(get_current_user), db=Depends(get_db)
+            ):
+                item = db.query(Item).filter(Item.id == item_id).first()
+                if item.owner_id != user.id:
+                    raise HTTPException(status_code=403)
+                item.title = title
+                db.commit()
+        """),
+    ],
+    [],
+)
+case(
+    "m42_idor_user_not_tied_to_object",
+    "positive",
+    "Adds PUT /items/{item_id} that loads the current user but updates any item by id.",
+    [
+        items_route("""
+            @router.put("/{item_id}")
+            def update_item(item_id: int, title: str, user: User = Depends(get_current_user), db=Depends(get_db)):
+                db.query(Item).filter(Item.id == item_id).update({"title": title})
+                db.commit()
+                return {"updated_by": user.id}
+        """)
+    ],
+    [("AG-IDOR-002", "PUT /items/{item_id}")],
+)
+
+
+# ---- Data layer: Supabase, Firebase, client secrets (Phase 3) -------------------------------
+def _fake_jwt(role):
+    import base64
+
+    def b64(d):
+        return base64.urlsafe_b64encode(json.dumps(d).encode()).decode().rstrip("=")
+
+    claims = {"iss": "accessguard-fixture", "ref": "fixture0000000000", "role": role}
+    return f"{b64({'alg': 'HS256', 'typ': 'JWT'})}.{b64(claims)}.ZmFrZS1zaWduYXR1cmUtZm9yLWV2YWw"
+
+
+MIG = "supabase/migrations/20240101000000_init.sql"
+MIG2 = "supabase/migrations/20240201000000_change.sql"
+DATA = {
+    "package.json": d("""
+        {"name": "data-fixture", "private": true, "dependencies": {"@supabase/supabase-js": "^2"}}
+    """),
+    MIG: d("""
+        create table public.profiles (id uuid primary key references auth.users, name text);
+        alter table public.profiles enable row level security;
+        create policy "profiles read own" on public.profiles for select to authenticated
+          using ((select auth.uid()) = id);
+        create policy "profiles update own" on public.profiles for update to authenticated
+          using ((select auth.uid()) = id);
+
+        create table public.posts (id bigint generated always as identity primary key,
+          author uuid not null references auth.users, body text);
+        alter table public.posts enable row level security;
+        create policy "posts are public" on public.posts for select to anon, authenticated
+          using (true);
+        create policy "posts insert own" on public.posts for insert to authenticated
+          with check ((select auth.uid()) = author);
+
+        create view public.post_feed with (security_invoker = true) as
+          select id, body from public.posts;
+    """),
+    "firestore.rules": d("""
+        rules_version = '2';
+        service cloud.firestore {
+          match /databases/{database}/documents {
+            function isOwner(uid) { return request.auth != null && request.auth.uid == uid; }
+            match /users/{userId} {
+              allow read, write: if isOwner(userId);
+            }
+            match /announcements/{id} {
+              allow read: if request.auth != null && request.auth.token.admin == true;
+            }
+          }
+        }
+    """),
+    "src/lib/supabase.ts": d("""
+        import { createClient } from '@supabase/supabase-js';
+
+        export const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        );
+    """),
+    "src/app/api/admin/route.ts": d("""
+        import { createClient } from '@supabase/supabase-js';
+
+        const admin = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+
+        export async function GET() {
+          const { data } = await admin.from('profiles').select('*');
+          return Response.json(data);
+        }
+    """),
+}
+
+
+def data_case(cid, kind, desc, edits, expected):
+    case(cid, kind, desc, edits, expected, base_override=DATA, framework="data")
+
+
+data_case(
+    "m43_supabase_table_without_rls",
+    "positive",
+    "A migration creates public.audit_log without enabling row level security.",
+    [("write", MIG2, "create table public.audit_log (id bigint, actor uuid, action text);\n")],
+    [("AG-DATA-001", "public.audit_log")],
+)
+data_case(
+    "m44_supabase_rls_disabled",
+    "positive",
+    "A migration disables row level security on public.profiles.",
+    [("write", MIG2, "alter table public.profiles disable row level security;\n")],
+    [("AG-DATA-001", "public.profiles")],
+)
+data_case(
+    "m45_supabase_new_table_with_owner_policies",
+    "negative",
+    "A migration adds public.notes with RLS and owner-only policies.",
+    [
+        (
+            "write",
+            MIG2,
+            d("""
+                create table public.notes (id bigint primary key, owner uuid, body text);
+                alter table public.notes enable row level security;
+                create policy "notes own" on public.notes for all to authenticated
+                  using ((select auth.uid()) = owner) with check ((select auth.uid()) = owner);
+            """),
+        )
+    ],
+    [],
+)
+data_case(
+    "m46_supabase_update_policy_true",
+    "positive",
+    "Replaces the owner check of the posts insert policy with true for anon.",
+    [
+        (
+            "write",
+            MIG2,
+            'create policy "anyone edits posts" on public.posts for update to anon using (true);\n',
+        )
+    ],
+    [("AG-DATA-001", "public.posts")],
+)
+data_case(
+    "m47_supabase_null_fail_open",
+    "positive",
+    "The profiles update policy also passes rows whose id is NULL.",
+    [
+        (
+            "write",
+            MIG2,
+            'alter policy "profiles update own" on public.profiles\n'
+            "  using ((select auth.uid()) = id or id is null);\n",
+        )
+    ],
+    [("AG-DATA-002", "public.profiles")],
+)
+data_case(
+    "m48_supabase_view_bypasses_rls",
+    "positive",
+    "Adds a view over public.profiles without security_invoker.",
+    [
+        (
+            "write",
+            MIG2,
+            "create view public.profile_names as select id, name from public.profiles;\n",
+        )
+    ],
+    [("AG-DATA-001", "public.profile_names")],
+)
+data_case(
+    "m49_supabase_view_security_invoker",
+    "negative",
+    "Adds the same view with security_invoker = true.",
+    [
+        (
+            "write",
+            MIG2,
+            "create view public.profile_names with (security_invoker = true) as\n"
+            "  select id, name from public.profiles;\n",
+        )
+    ],
+    [],
+)
+data_case(
+    "m50_firebase_rule_opened",
+    "positive",
+    "Opens the users collection to everyone.",
+    [
+        replace(
+            "firestore.rules",
+            "allow read, write: if isOwner(userId);",
+            "allow read, write: if true;",
+        )
+    ],
+    [("AG-DATA-003", "firestore.rules:/users/{userId}")],
+)
+data_case(
+    "m51_firebase_new_owner_rule",
+    "negative",
+    "Adds an owner-checked orders collection.",
+    [
+        replace(
+            "firestore.rules",
+            "    match /announcements/{id} {",
+            "    match /orders/{orderId} {\n"
+            "      allow read, write: if isOwner(resource.data.uid);\n"
+            "    }\n    match /announcements/{id} {",
+        )
+    ],
+    [],
+)
+data_case(
+    "m52_firebase_auth_only_write",
+    "positive",
+    "Lets any signed-in user write announcements.",
+    [
+        replace(
+            "firestore.rules",
+            "      allow read: if request.auth != null && request.auth.token.admin == true;",
+            "      allow read: if request.auth != null && request.auth.token.admin == true;\n"
+            "      allow write: if request.auth != null;",
+        )
+    ],
+    [("AG-DATA-003", "firestore.rules:/announcements/{id}")],
+)
+data_case(
+    "m53_service_role_key_in_client",
+    "positive",
+    "Hard-codes a service-role JWT in the browser Supabase client.",
+    [
+        replace(
+            "src/lib/supabase.ts",
+            "process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,",
+            f"'{_fake_jwt('service_role')}',",
+        )
+    ],
+    [("AG-SECRET-001", "src/lib/supabase.ts#supabase_service_role_jwt")],
+)
+data_case(
+    "m54_service_role_key_on_server",
+    "negative",
+    "Hard-codes the same key in a server route handler (bad practice, but not client exposure).",
+    [
+        replace(
+            "src/app/api/admin/route.ts",
+            "process.env.SUPABASE_SERVICE_ROLE_KEY!",
+            f"'{_fake_jwt('service_role')}'",
+        )
+    ],
+    [],
+)
+data_case(
+    "m55_secret_env_with_public_prefix",
+    "positive",
+    "Reads the service-role key from a NEXT_PUBLIC_ variable, which Next.js inlines into the "
+    "client bundle.",
+    [
+        replace(
+            "src/lib/supabase.ts",
+            "process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,",
+            "process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,",
+        )
+    ],
+    [("AG-SECRET-001", "src/lib/supabase.ts#secret_env_public_prefix")],
+)
+data_case(
+    "m56_anon_key_literal_in_client",
+    "negative",
+    "Hard-codes the anon (publishable) JWT in the client, which is public by design.",
+    [
+        replace(
+            "src/lib/supabase.ts",
+            "process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,",
+            f"'{_fake_jwt('anon')}',",
+        )
+    ],
+    [],
+)
+
+
 def materialize(root: Path, files: dict[str, str]) -> None:
     for rel, content in files.items():
         p = root / rel
@@ -628,6 +1390,8 @@ for c in CASES:
             head_files[path] = head_files[path].replace(old, new)
         elif e[0] == "write":
             head_files[e[1]] = e[2]
+        elif e[0] == "write_append":
+            head_files[e[1]] = head_files[e[1]] + e[2]
         else:
             del head_files[e[1]]
     materialize(cdir / "base", base_files)
@@ -635,7 +1399,7 @@ for c in CASES:
     lines = [
         f"id: {c['id']}",
         f"kind: {c['kind']}",
-        "framework: fastapi",
+        f"framework: {c['framework']}",
         f"description: {json.dumps(c['desc'])}",
         "expected:" + ("" if c["expected"] else " []"),
     ]

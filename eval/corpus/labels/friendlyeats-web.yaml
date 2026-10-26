@@ -1,0 +1,93 @@
+# Hand labels for eval/tools/replay_history.py (see its docstring).
+07bd567c1b49d5b580f14f49e77da63597462993945af7396c921f5a98d5a871:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+11d5e6e5761eaf53ba04dbd5e4eb74579f69fc6061d7d6ec05ae40d881d7b2b0:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+145814d01f5d5a7c8fac9a0ee0c0aa0bc06718820a6290b0b08eba472fcdfa1e:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+1f6d35da5f7beea0555960b95b1767569c672c6dbb4db57c9221f97429a619a4:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+4294a554cc162fe0877a694b272c0e044864ea97f513f89735850eecd5154617:
+  actionable: false
+  label: tp
+  note: any signed-in user can write by design in the sample app
+5cd860bf05ed7da372c171a5e3da7169c3cba421574bc3dbaeeb8654d544020d:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+6f7a06042384c78a25faeeee6b903d810da74aa7bb5690ec2d374547e82a7789:
+  actionable: false
+  label: tp
+  note: any signed-in user can write by design in the sample app
+71a5b629cf5840ec1ffcde8a2b74243e15fa7f03d57d6e3a92a6379b4254f156:
+  actionable: false
+  label: tp
+  note: any signed-in user can write by design in the sample app
+71bba4f02010aed549deb6b2bb84ab97ca3db6be9dca6b3e64966b1750c1b6f8:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+7b848a027dd3f1e0e5062848146306fbc7396483563b6254a4da8ec85cd60957:
+  actionable: false
+  label: tp
+  note: any signed-in user can write by design in the sample app
+816e038bf0ad7cdfb0b0fe50cfcd4bceead56a228172879c2907e1e64ed8f834:
+  actionable: false
+  label: tp
+  note: any signed-in user can write by design in the sample app
+871454b91ab07fa4247753879c903ef5baf952b2df0f807e9cf74c7751d287f5:
+  actionable: false
+  label: tp
+  note: any signed-in user can write by design in the sample app
+949fdd074754592fbf044457d6af677d7f4d138a1e882f0febc056ce9361f1c4:
+  actionable: false
+  label: tp
+  note: any signed-in user can write by design in the sample app
+9b2d83409ecc469923e32b1765ff127bb97613d74c32fea8825bc49b038562e6:
+  actionable: false
+  label: tp
+  note: any signed-in user can write by design in the sample app
+9d91c2387808625367405109597907b7e3db848625ad2ee9fa5873239d31265a:
+  actionable: false
+  label: tp
+  note: any signed-in user can write by design in the sample app
+b0f18ad76e732a84b70821c46f174a53794d7fcd8f45b83208f1012cd2702982:
+  actionable: false
+  label: tp
+  note: any signed-in user can write by design in the sample app
+b531a3b60642554dd27af0dacf1c9c2002a3eefdece8bbcbdea5ae0f194e4987:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+b876c47ba728d6220f4925e35029623fe2c62ae4b65cdbe08515c15d1c225a2f:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+c76798d34dac5e0343c56f39149fa0ea78e732ab87df41c2cb6034403086f231:
+  actionable: false
+  label: tp
+  note: any signed-in user can write by design in the sample app
+d384861e1a7323c943a998214941a5e13fe194e5a6a7db11571729bed1b8140c:
+  actionable: false
+  label: tp
+  note: any signed-in user can write by design in the sample app
+d9bfa7c36c58f12349bb472f67807d8590104f8b5dc3976f90969a45e42f28a6:
+  actionable: false
+  label: tp
+  note: any signed-in user can write by design in the sample app
+f6f81495866d15a9ed181ef31da332fc000ca171a87910f5f4a4b55c84319dfb:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app
+f88ca3f8396b3097b2e3f24795043e6fce2b788adb54a88d0bbe3f3488085f80:
+  actionable: false
+  label: tp
+  note: world-readable path by design in the sample app

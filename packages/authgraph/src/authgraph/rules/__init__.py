@@ -3,13 +3,28 @@
 from authgraph.rules.auth import GuardRegression, MountedWithoutAuth, NewUnauthenticatedEndpoint
 from authgraph.rules.base import Rule, RuleContext
 from authgraph.rules.config import ConfigWidened
+from authgraph.rules.consistency import RoleConsistency
+from authgraph.rules.data import (
+    ClientSecret,
+    FirebaseOpenRule,
+    SupabaseExposure,
+    SupabaseNullFailOpen,
+)
+from authgraph.rules.idor import IdorNoPrincipal, IdorPrincipalNotTied
 from authgraph.rules.role import MassAssignment
 
 ALL_RULES: list[Rule] = [
     GuardRegression(),
     NewUnauthenticatedEndpoint(),
     MountedWithoutAuth(),
+    RoleConsistency(),
+    IdorNoPrincipal(),
+    IdorPrincipalNotTied(),
     MassAssignment(),
+    SupabaseExposure(),
+    SupabaseNullFailOpen(),
+    FirebaseOpenRule(),
+    ClientSecret(),
     ConfigWidened(),
 ]
 

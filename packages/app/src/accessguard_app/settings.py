@@ -39,6 +39,10 @@ class Settings:
         default_factory=lambda: int(_env("SCAN_DEBOUNCE_SECONDS", "15"))
     )
     max_tarball_bytes: int = 200 * 1024 * 1024
+    # Optional LLM judge (PLAN.md §6.13): a LiteLLM model name such as
+    # "anthropic/claude-sonnet-5-5". Empty = off. It may only downgrade or suppress findings.
+    llm_model: str = field(default_factory=lambda: _env("ACCESSGUARD_LLM_MODEL"))
+    llm_samples: int = field(default_factory=lambda: int(_env("ACCESSGUARD_LLM_SAMPLES", "3")))
 
     def validate_github(self) -> None:
         for name in ("app_id", "client_id", "client_secret", "webhook_secret", "private_key"):

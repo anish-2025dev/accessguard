@@ -1,0 +1,21 @@
+# Hand labels for eval/tools/replay_history.py (see its docstring).
+2f32b3c840b56295adc2b767b20c9bb6ae3c8473269c9d290364789cb892f4ce:
+  actionable: false
+  label: tp
+  note: 'RealWorld spec: article list is public'
+59bfefdad3b25e761ea4464253c361575a0116cdcf8e7fdff415adb46d3714a5:
+  actionable: false
+  label: tp
+  note: 'RealWorld spec: comments are public reads'
+ace46c9dc011578db43f86cef4450ceb61319b641d90c817ebf737ff63e30cd9:
+  actionable: false
+  label: tp
+  note: 'RealWorld spec: article reads are public (optional auth)'
+c9c04bce1709653f85e5c188eac1bd478eb239065bb4c3dfaf5c9b8af67ebf88:
+  actionable: false
+  label: tp
+  note: public read, re-added under the nx layout
+d3cd1c85f5012d950e9b3a02f2b8029884ca2dfd149ee98a2199b0b58786d947:
+  actionable: false
+  label: tp
+  note: public read, re-added under the nx layout

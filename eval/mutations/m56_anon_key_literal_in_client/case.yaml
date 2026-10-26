@@ -1,0 +1,5 @@
+id: m56_anon_key_literal_in_client
+kind: negative
+framework: data
+description: "Hard-codes the anon (publishable) JWT in the client, which is public by design."
+expected: []

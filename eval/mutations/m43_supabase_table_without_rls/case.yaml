@@ -1,0 +1,7 @@
+id: m43_supabase_table_without_rls
+kind: positive
+framework: data
+description: "A migration creates public.audit_log without enabling row level security."
+expected:
+  - rule_id: AG-DATA-001
+    key: "public.audit_log"

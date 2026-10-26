@@ -136,3 +136,19 @@ def test_fetch_failure_stops_replay_before_report(
     with pytest.raises(subprocess.CalledProcessError):
         replay.main()
     assert not (tmp_path / "reports" / "replay-example.json").exists()
+
+
+@pytest.mark.parametrize(
+    "path", ["routes.js", "routes.ts", "migration.sql", "firestore.rules", ".env"]
+)
+def test_replay_includes_non_python_source_changes(
+    tmp_path: Path, shallow_checkout: tuple[Path, str, str], path: str
+) -> None:
+    checkout, _, _ = shallow_checkout
+    commit(checkout, path, "\n")
+    commit(checkout, "README.md", "documentation after source change\n")
+    assert replay.main() == 0
+    report = json.loads((tmp_path / "reports" / "replay-example.json").read_text())
+    assert report["commits"] == 2
+    # The source commit is newest among relevant changes; configuration is retained as well.
+    assert {item["rule_id"] for item in report["items"]} == {"AG-CFG-001"}
