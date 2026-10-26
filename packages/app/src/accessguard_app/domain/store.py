@@ -94,6 +94,11 @@ async def known_delivery_guids(s: AsyncSession, guids: Sequence[uuid.UUID]) -> s
 
 async def upsert_installation(s: AsyncSession, inst: dict[str, Any]) -> None:
     account = inst.get("account") or {}
+    suspended_at = inst.get("suspended_at")
+    if isinstance(suspended_at, str):
+        suspended_at = datetime.fromisoformat(suspended_at.replace("Z", "+00:00"))
+        if suspended_at.tzinfo is None:
+            suspended_at = suspended_at.replace(tzinfo=UTC)
     values = {
         "installation_id": int(inst["id"]),
         "account_id": int(account.get("id") or 0),
@@ -101,7 +106,7 @@ async def upsert_installation(s: AsyncSession, inst: dict[str, Any]) -> None:
         "account_type": account.get("type"),
         "repository_selection": inst.get("repository_selection"),
         "permissions": inst.get("permissions"),
-        "suspended_at": inst.get("suspended_at"),
+        "suspended_at": suspended_at,
         "deleted_at": None,
         "last_reconciled_at": now(),
     }
@@ -242,6 +247,8 @@ async def start_scan(
         await s.execute(
             select(Scan).where(
                 Scan.repo_id == repo_id,
+                Scan.pr_number == pr_number,
+                Scan.base_sha == base_sha,
                 Scan.head_sha == head_sha,
                 Scan.trigger == trigger,
                 Scan.config_hash == config_hash,
@@ -322,11 +329,23 @@ async def finding_by_fingerprint(
     s: AsyncSession, repo_id: int, pr_number: int | None, fingerprint_prefix: str
 ) -> list[FindingRow]:
     q = select(FindingRow).where(
-        FindingRow.repo_id == repo_id, FindingRow.fingerprint.startswith(fingerprint_prefix)
+        FindingRow.repo_id == repo_id,
+        FindingRow.fingerprint.startswith(fingerprint_prefix, autoescape=True),
     )
     if pr_number is not None:
         q = q.where(FindingRow.pr_number == pr_number)
     return list((await s.execute(q)).scalars().all())
+
+
+async def dismissed_fingerprints(s: AsyncSession, repo_id: int, pr_number: int) -> set[str]:
+    rows = await s.execute(
+        select(FindingRow.fingerprint).where(
+            FindingRow.repo_id == repo_id,
+            FindingRow.pr_number == pr_number,
+            FindingRow.status == "dismissed",
+        )
+    )
+    return set(rows.scalars().all())
 
 
 async def save_finding(s: AsyncSession, row: FindingRow) -> None:

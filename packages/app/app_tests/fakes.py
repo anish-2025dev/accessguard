@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from accessguard_app.github.port import Json
+from accessguard_app.github.port import CommentOutsideDiff, Json
 
 _ids = itertools.count(1000)
 
@@ -173,7 +173,7 @@ class FakeGitHub:
         self, installation_id: int, repo: str, number: int, body: Json
     ) -> int:
         if self.reject_lines:
-            raise RuntimeError("422 line must be part of the diff")
+            raise CommentOutsideDiff("422 line must be part of the diff")
         cid = next(_ids)
         self.review_comments[cid] = {"repo": repo, "pr": number, **body}
         return cid

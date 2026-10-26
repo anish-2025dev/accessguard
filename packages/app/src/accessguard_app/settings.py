@@ -44,6 +44,17 @@ class Settings:
     llm_model: str = field(default_factory=lambda: _env("ACCESSGUARD_LLM_MODEL"))
     llm_samples: int = field(default_factory=lambda: int(_env("ACCESSGUARD_LLM_SAMPLES", "3")))
 
+    def validate_github(self) -> None:
+        for name in ("app_id", "client_id", "client_secret", "webhook_secret", "private_key"):
+            if not getattr(self, name).strip():
+                raise ValueError(f"GitHub credential {name} is required")
+        if not self.private_key.lstrip().startswith(
+            ("-----BEGIN PRIVATE KEY-----", "-----BEGIN RSA PRIVATE KEY-----")
+        ):
+            raise ValueError("GitHub private_key must have a PEM private key header")
+
 
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+    settings.validate_github()
+    return settings

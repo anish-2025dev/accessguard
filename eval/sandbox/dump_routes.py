@@ -144,9 +144,12 @@ def dump(root: Path, target: str) -> dict[str, Any]:
             with contextlib.redirect_stdout(sys.stderr):  # apps that print/log at import time
                 app = load(root, cand)
             routes = [r for r in walk(list(app.routes)) if r["path"] not in FRAMEWORK_DOC_PATHS]
-            if not routes:  # apps that register routers in their startup lifespan (lnbits)
+            try:  # apps may register additional routers in their startup lifespan
                 with contextlib.redirect_stdout(sys.stderr):
                     run_lifespan(app)
+            except BaseException:
+                best["errors"].append({"app": cand, "error": traceback.format_exc(limit=3)})
+            else:
                 routes = [r for r in walk(list(app.routes)) if r["path"] not in FRAMEWORK_DOC_PATHS]
         except BaseException:
             best["errors"].append({"app": cand, "error": traceback.format_exc(limit=3)})

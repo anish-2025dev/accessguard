@@ -28,9 +28,12 @@ removed a concrete false positive found that way.
    high/critical) when it is mutating or under an admin path. A new unauthenticated *read* next to
    authenticated router peers is advisory (check-run summary only): in the replayed histories
    these were public-by-design reads (tiers, public profiles, articles) far more often than bugs.
-   Auth-flow endpoints (login, signup, token, password reset, webhooks, health, `/auth/...`) and
-   `POST` to a bare user/account collection (the signup convention) are not reported; a role or
-   owner field in such a body is still AG-ROLE-002.
+   Auth-flow endpoints (login, signup, token, password reset, webhooks, health) are not reported
+   when the last static path segment or handler identifies the auth flow. Parent path keywords
+   such as `/auth/...` do not exempt ordinary endpoints, and admin paths are never exempt.
+   `POST` to a bare user/account collection (the signup convention) is also exempt outside admin
+   paths; a role or owner field in such a body is still AG-ROLE-002. For guard regressions, only
+   the auth-flow handler heuristic applies: path keywords cannot hide a removed guard.
 4. **Deltas need comparable facts.** `condition_weakened` requires the base and head predicates to
    share at least one atom and the base predicate not to be a tautology (a guard that rejects
    everyone is a modelling artefact). Rejections inside `except` blocks are conditioned on the

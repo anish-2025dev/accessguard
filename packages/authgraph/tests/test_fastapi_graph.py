@@ -1,8 +1,29 @@
 from pathlib import Path
 
+import pytest
 from authgraph.facts.models import GuardKind, Verdict
 
 from .helpers import DEPS, endpoints
+
+
+@pytest.mark.parametrize("declared", ["deps.check", "check", "prefix.deps.check"])
+def test_configured_guard_requires_exact_resolved_symbol(tmp_path: Path, declared: str) -> None:
+    eps = endpoints(
+        tmp_path,
+        {
+            ".accessguard.yml": f"auth_guards:\n  - symbol: {declared}\n    kind: authn\n",
+            "deps.py": "def check(): return 1\n",
+            "main.py": (
+                "from fastapi import FastAPI, Depends\nfrom deps import check as alias\n"
+                'app = FastAPI()\n@app.post("/items")\ndef create(user=Depends(alias)): ...\n'
+            ),
+        },
+    )
+    endpoint = eps["POST /items"]
+    assert endpoint.authn == (Verdict.AUTH if declared == "deps.check" else Verdict.NO_AUTH)
+    assert [g.symbol for g in endpoint.guards] == (
+        ["deps.check"] if declared == "deps.check" else []
+    )
 
 
 def test_prefixes_include_deps_and_double_include(tmp_path: Path) -> None:

@@ -23,13 +23,15 @@ https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-githu
 from __future__ import annotations
 
 import base64
+import re
+import time
 from typing import Any, cast
 
 import httpx
 from githubkit import AppAuthStrategy, AppInstallationAuthStrategy, GitHub, TokenAuthStrategy
 from githubkit.exception import RequestFailed
 
-from accessguard_app.github.port import InstallationGone, Json, RateLimited
+from accessguard_app.github.port import CommentOutsideDiff, InstallationGone, Json, RateLimited
 from accessguard_app.settings import Settings
 
 OAUTH_TOKEN_URL = "https://github.com/login/oauth/access_token"  # noqa: S105 - URL, not a secret
@@ -67,9 +69,16 @@ class GitHubKitAdapter:
             if status in (403, 429) and (
                 "retry-after" in headers or headers.get("x-ratelimit-remaining") == "0"
             ):
-                retry = float(headers.get("retry-after") or 60)
-                raise RateLimited(retry) from e
-            if status in (401, 404) and "installation" in str(e.response.url):
+                if "retry-after" in headers:
+                    retry = float(headers["retry-after"])
+                elif "x-ratelimit-reset" in headers:
+                    retry = float(headers["x-ratelimit-reset"]) - time.time()
+                else:
+                    retry = 60
+                raise RateLimited(max(1, retry)) from e
+            if status in (401, 404) and re.fullmatch(
+                r"/app/installations/\d+/access_tokens", e.response.url.path
+            ):
                 raise InstallationGone(str(e)) from e
             raise
 
@@ -112,7 +121,7 @@ class GitHubKitAdapter:
             r = await client.post(
                 OAUTH_TOKEN_URL,
                 headers={"Accept": "application/json"},
-                params={
+                data={
                     "client_id": self.s.client_id,
                     "client_secret": self.s.client_secret,
                     "code": code,
@@ -235,11 +244,26 @@ class GitHubKitAdapter:
         self, installation_id: int, repo: str, number: int, body: Json
     ) -> int:
         o, n = _split(repo)
-        r = await self._call(
-            self._gh(installation_id).rest.pulls.async_create_review_comment(
-                o, n, number, data=cast(Any, body)
+        try:
+            r = await self._call(
+                self._gh(installation_id).rest.pulls.async_create_review_comment(
+                    o, n, number, data=cast(Any, body)
+                )
             )
-        )
+        except RequestFailed as e:
+            if e.response.status_code == 422:
+                error = _json(e.response)
+                messages = [error.get("message", "")] + [
+                    item.get("message", "") if isinstance(item, dict) else str(item)
+                    for item in error.get("errors", [])
+                ]
+                if any(
+                    phrase in str(message).lower()
+                    for message in messages
+                    for phrase in ("must be part of the diff", "not part of the diff")
+                ):
+                    raise CommentOutsideDiff("Comment line is outside the diff") from e
+            raise
         return int(_json(r)["id"])
 
     async def update_review_comment(

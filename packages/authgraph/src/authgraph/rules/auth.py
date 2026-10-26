@@ -65,11 +65,17 @@ class NewUnauthenticatedEndpoint:
             if d.kind != "new_unguarded":
                 continue
             e = d.head
-            if AUTH_FLOW.search(e.path) or AUTH_FLOW_HANDLER.search(e.handler.rsplit(".", 1)[-1]):
-                continue
-            if e.method == "POST" and SIGNUP.search(e.path):
-                continue
-            if e.method not in MUTATING and not peers_auth.get(e.router_group):
+            admin = "admin_path" in e.sensitivity
+            segments = [s for s in e.path.split("/") if s and "{" not in s and "<" not in s]
+            last_static = "/" + segments[-1] if segments else ""
+            if not admin:
+                if AUTH_FLOW.search(last_static) or AUTH_FLOW_HANDLER.search(
+                    e.handler.rsplit(".", 1)[-1]
+                ):
+                    continue
+                if e.method == "POST" and SIGNUP.search(e.path):
+                    continue
+            if e.method not in MUTATING and not peers_auth.get(e.router_group) and not admin:
                 continue
             # Reads next to authenticated peers are often public by design (ADR 009): they go to
             # the check summary (advisory) unless the path is administrative.
@@ -115,7 +121,7 @@ class GuardRegression:
                 by_ep.setdefault(d.head.id, []).append(d)
         for ep_id, ds in sorted(by_ep.items()):
             e = ds[0].head
-            if AUTH_FLOW.search(e.path) or AUTH_FLOW_HANDLER.search(e.handler.rsplit(".", 1)[-1]):
+            if AUTH_FLOW_HANDLER.search(e.handler.rsplit(".", 1)[-1]):
                 continue  # login/signup/token endpoints authenticate the caller by design
             steps = route_evidence(e)
             for d in ds:

@@ -14,6 +14,7 @@ rest.checks.async_list_for_ref(owner, repo, ref, check_name=), rest.pulls.async_
 from __future__ import annotations
 
 import asyncio
+import base64
 import os
 import shutil
 import subprocess
@@ -30,14 +31,26 @@ CASES = ROOT / "eval" / "mutations"
 CHECK = "AccessGuard"
 
 
-def git(cwd: Path, *args: str) -> str:
-    return subprocess.run(
-        ["git", *args], cwd=cwd, check=True, capture_output=True, text=True
-    ).stdout.strip()
+def git(cwd: Path, *args: str, token: str | None = None) -> str:
+    env = os.environ.copy()
+    if token is not None:
+        auth = base64.b64encode(f"x-access-token:{token}".encode()).decode()
+        env.update(
+            GIT_CONFIG_COUNT="1",
+            GIT_CONFIG_KEY_0="http.https://github.com/.extraheader",
+            GIT_CONFIG_VALUE_0=f"Authorization: Basic {auth}",
+        )
+    result = subprocess.run(
+        ["git", *args], cwd=cwd, env=env, check=False, capture_output=True, text=True
+    )
+    if result.returncode:
+        # Git's output can echo credentials; propagate only the operation and exit status.
+        raise RuntimeError(f"git {args[0]} failed (exit {result.returncode})")
+    return result.stdout.strip()
 
 
 def push_case(repo: str, token: str, case: Path, work: Path) -> tuple[str, str]:
-    url = f"https://x-access-token:{token}@github.com/{repo}.git"
+    url = f"https://github.com/{repo}.git"
     d = work / case.name
     d.mkdir()
     git(d, "init", "-q", "-b", "tmp")
@@ -47,7 +60,7 @@ def push_case(repo: str, token: str, case: Path, work: Path) -> tuple[str, str]:
     git(d, "add", "-A")
     git(d, "commit", "-qm", f"{case.name} base")
     base = f"e2e/{case.name}/base"
-    git(d, "push", "-qf", url, f"HEAD:refs/heads/{base}")
+    git(d, "push", "-qf", url, f"HEAD:refs/heads/{base}", token=token)
     for p in d.iterdir():
         if p.name != ".git":
             shutil.rmtree(p) if p.is_dir() else p.unlink()
@@ -55,7 +68,7 @@ def push_case(repo: str, token: str, case: Path, work: Path) -> tuple[str, str]:
     git(d, "add", "-A")
     git(d, "commit", "-qm", f"{case.name} head", "--allow-empty")
     head = f"e2e/{case.name}/head"
-    git(d, "push", "-qf", url, f"HEAD:refs/heads/{head}")
+    git(d, "push", "-qf", url, f"HEAD:refs/heads/{head}", token=token)
     return base, git(d, "rev-parse", "HEAD")
 
 

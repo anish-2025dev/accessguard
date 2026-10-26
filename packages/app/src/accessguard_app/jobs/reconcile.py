@@ -66,5 +66,8 @@ async def reconcile_state(ctx: dict[str, Any]) -> str:
             )
     for iid, inst in remote.items():
         if not inst.get("suspended_at"):
-            await resync_repos(svc, iid, baseline=True)
+            try:
+                await resync_repos(svc, iid, baseline=True)
+            except Exception:
+                log.exception("repository resync failed", extra={"installation_id": iid})
     return f"{len(remote)} installations, {len(local - set(remote))} removed"
