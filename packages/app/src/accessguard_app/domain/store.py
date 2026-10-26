@@ -310,6 +310,29 @@ async def repo_has_reported(s: AsyncSession, repo_id: int) -> bool:
     return bool(n)
 
 
+async def repo_by_name(s: AsyncSession, full_name: str) -> Repository | None:
+    q = select(Repository).where(Repository.full_name == full_name)
+    return (await s.execute(q)).scalars().first()
+
+
+async def get_scan(s: AsyncSession, scan_id: uuid.UUID) -> Scan | None:
+    return await s.get(Scan, scan_id)
+
+
+async def latest_done_scan(s: AsyncSession, repo_id: int, pr: int, head_sha: str) -> Scan | None:
+    q = (
+        select(Scan)
+        .where(
+            Scan.repo_id == repo_id,
+            Scan.pr_number == pr,
+            Scan.head_sha == head_sha,
+            Scan.status == "done",
+        )
+        .order_by(Scan.finished_at.desc())
+    )
+    return (await s.execute(q)).scalars().first()
+
+
 # --- findings ---------------------------------------------------------------------------------
 
 

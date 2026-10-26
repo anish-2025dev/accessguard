@@ -167,6 +167,17 @@ class GitHubKitAdapter:
             _json(await self._call(self._gh(installation_id).rest.pulls.async_get(o, n, number)))
         )
 
+    async def list_commit_pulls(self, installation_id: int, repo: str, sha: str) -> list[Json]:
+        """GET /repos/{owner}/{repo}/commits/{commit_sha}/pulls (githubkit 0.16.1
+        ``rest.repos.async_list_pull_requests_associated_with_commit``)."""
+        o, n = _split(repo)
+        r = await self._call(
+            self._gh(installation_id).rest.repos.async_list_pull_requests_associated_with_commit(
+                o, n, sha, per_page=30
+            )
+        )
+        return [dict(x) for x in _json(r)]
+
     async def compare(self, installation_id: int, repo: str, base: str, head: str) -> Json:
         o, n = _split(repo)
         r = await self._call(

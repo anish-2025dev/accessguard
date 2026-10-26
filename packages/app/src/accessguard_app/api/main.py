@@ -14,17 +14,32 @@ from datetime import timedelta
 from typing import Any
 from urllib.parse import urlencode
 
+from accessguard_verifier.vault import LABELS, CredentialIn, Sealer
+from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from githubkit.webhooks import verify
+from pydantic import BaseModel, ConfigDict, ValidationError
 from sqlalchemy import text
 
 from accessguard_app import metrics
 from accessguard_app.domain import store
+from accessguard_app.domain.verifier_store import DbCredentialStore
 from accessguard_app.runtime import Services
 
 log = logging.getLogger("accessguard.api")
 STATE_TTL = timedelta(minutes=10)
+
+
+class CredentialUpload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    repo: str
+    label: str
+    credential: CredentialIn
+
+    def model_post_init(self, _: object) -> None:
+        if self.label not in LABELS:
+            raise ValueError("unknown label")
 
 
 def verify_signature(secret: str, body: bytes, signature: str | None) -> bool:
@@ -146,6 +161,69 @@ def create_app(services: Services, *, manage_lifespan: bool = False) -> FastAPI:
                 "AccessGuard will review your next pull request.",
             )
         )
+
+    def _sealer() -> Sealer | None:
+        if "sealer" in services.extra:
+            return services.extra["sealer"]  # type: ignore[no-any-return]
+        if not s.verifier_public_key:
+            return None
+        key = X25519PublicKey.from_public_bytes(base64.b64decode(s.verifier_public_key))
+        return Sealer(key, DbCredentialStore(services.sessions))
+
+    async def _maintainer_repo(request: Request, repo_name: str) -> tuple[int, str] | Response:
+        """GitHub user token -> user; the user needs write access to the repository."""
+        auth = request.headers.get("authorization", "")
+        if not auth.lower().startswith("bearer ") or len(auth) < 12:
+            return JSONResponse({"error": "GitHub user token required"}, status_code=401)
+        try:
+            user = await services.github.get_authenticated_user(auth[7:].strip())
+        except Exception:
+            return JSONResponse({"error": "invalid token"}, status_code=401)
+        async with services.sessions() as db:
+            repo = await store.repo_by_name(db, repo_name)
+        if repo is None or repo.status != "active" or repo.installation_id is None:
+            return JSONResponse({"error": "repository not installed"}, status_code=404)
+        perm = await services.github.get_permission(
+            repo.installation_id, repo_name, str(user.get("login"))
+        )
+        if perm not in {"admin", "maintain", "write"}:
+            return JSONResponse({"error": "write access required"}, status_code=403)
+        return repo.repo_id, str(user.get("login"))
+
+    @app.post("/verifier/credentials")
+    async def put_credential(request: Request) -> Response:
+        """Upload a test-account credential (PLAN.md §6.10). Stored sealed for the verifier;
+        never returned, logged or echoed (validation errors do not repeat the input)."""
+        sealer = _sealer()
+        if sealer is None:
+            return JSONResponse({"error": "runtime verifier not configured"}, status_code=503)
+        try:
+            body = CredentialUpload.model_validate(await request.json())
+        except (ValueError, ValidationError):
+            return JSONResponse({"error": "invalid body"}, status_code=422)
+        who = await _maintainer_repo(request, body.repo)
+        if isinstance(who, Response):
+            return who
+        repo_id, login = who
+        await sealer.put(repo_id, body.label, body.credential)
+        log.info(
+            "verifier credential stored",
+            extra={"repo_id": repo_id, "label": body.label, "actor": login},
+        )
+        return Response(status_code=204)
+
+    @app.delete("/verifier/credentials")
+    async def delete_credential(request: Request, repo: str = "", label: str = "") -> Response:
+        sealer = _sealer()
+        if sealer is None:
+            return JSONResponse({"error": "runtime verifier not configured"}, status_code=503)
+        if label not in LABELS:
+            return JSONResponse({"error": "unknown label"}, status_code=422)
+        who = await _maintainer_repo(request, repo)
+        if isinstance(who, Response):
+            return who
+        await sealer.delete(who[0], label)
+        return Response(status_code=204)
 
     @app.get("/healthz")
     async def healthz() -> dict[str, str]:

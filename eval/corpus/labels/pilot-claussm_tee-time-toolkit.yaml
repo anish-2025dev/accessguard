@@ -1,0 +1,5 @@
+# Pilot hand labels (Phase 4). label=factual TP/FP; actionable=would a reviewer act.
+851c271021ebc4b86e2cb942c2c28f520663326318218c564d3057c87e6cd56b:
+  actionable: true
+  label: tp
+  note: players_public view exposes player PII (incl phone) bypassing RLS on players

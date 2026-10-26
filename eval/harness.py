@@ -33,6 +33,8 @@ class Case:
     kind: str  # positive | negative | move
     root: Path
     expected: list[tuple[str, str]]
+    # optional expected tier per (rule_id, key): inline (deterministic) vs check-run only
+    tiers: dict[tuple[str, str], str] = field(default_factory=dict)
 
 
 @dataclass
@@ -58,8 +60,10 @@ def load_cases(dirs: list[Path] = CASE_DIRS) -> list[Case]:
             continue
         for spec in sorted(d.glob("*/case.yaml")):
             data = yaml.safe_load(spec.read_text(encoding="utf-8"))
-            expected = [(e["rule_id"], str(e["key"])) for e in data.get("expected") or []]
-            cases.append(Case(data["id"], data["kind"], spec.parent, expected))
+            raw = data.get("expected") or []
+            expected = [(e["rule_id"], str(e["key"])) for e in raw]
+            tiers = {(e["rule_id"], str(e["key"])): e["tier"] for e in raw if "tier" in e}
+            cases.append(Case(data["id"], data["kind"], spec.parent, expected, tiers))
     return cases
 
 
@@ -72,8 +76,14 @@ def evaluate(cases: list[Case]) -> dict[str, Any]:
     move_findings = 0
     per_case = []
     for case in cases:
-        got = Counter(finding_key(f) for f in diff_paths(case.root / "base", case.root / "head"))
+        findings = diff_paths(case.root / "base", case.root / "head")
+        got = Counter(finding_key(f) for f in findings)
         want = Counter(case.expected)
+        wrong_tier = sorted(
+            f"{finding_key(f)[0]} {finding_key(f)[1]} tier={f.get('tier')}"
+            for f in findings
+            if case.tiers.get(finding_key(f), f.get("tier")) != f.get("tier")
+        )
         for (rule, _), n in (got & want).items():
             stats.setdefault(rule, RuleStats()).tp += n
         for (rule, _), n in (got - want).items():
@@ -88,9 +98,9 @@ def evaluate(cases: list[Case]) -> dict[str, Any]:
             {
                 "id": case.id,
                 "kind": case.kind,
-                "ok": got == want,
+                "ok": got == want and not wrong_tier,
                 "missing": sorted(f"{r} {k}" for r, k in (want - got)),
-                "unexpected": sorted(f"{r} {k}" for r, k in (got - want)),
+                "unexpected": sorted(f"{r} {k}" for r, k in (got - want)) + wrong_tier,
             }
         )
     return {

@@ -3,12 +3,12 @@
 GitHub App (installed like CodeRabbit) that reports access-control regressions in PRs and pushes to main:
 "who can access what, and did this change make it worse?" Full spec: @docs/PLAN.md. Decisions: `docs/adr/`.
 
-Current phase: **Phase 3 (breadth and data layer)**. Don't build features from later phases unless asked.
+Current phase: **Phase 4 (runtime verification and pilot)**. Don't build features from later phases unless asked.
 
 ## Layout
 - `packages/authgraph` - analysis engine + CLI. The ONLY component that produces findings.
 - `packages/app` - GitHub App (webhooks, jobs, reporter). Delivery only, no analysis logic.
-- `packages/sandbox` - network-less Postgres replay of Supabase migrations (Phase 3); `packages/verifier` - Phase 4.
+- `packages/sandbox` - network-less Postgres replay of Supabase migrations (Phase 3); `packages/verifier` - runtime verifier (vault, broker, plans); runs only in the `VerifyWorker` process (ADR 015).
 - `eval/` - labelled corpus, synthetic PR mutations, harness.
 
 ## Commands (uv workspace, Python 3.12)

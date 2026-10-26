@@ -43,6 +43,14 @@ class Settings:
     # "anthropic/claude-sonnet-5-5". Empty = off. It may only downgrade or suppress findings.
     llm_model: str = field(default_factory=lambda: _env("ACCESSGUARD_LLM_MODEL"))
     llm_samples: int = field(default_factory=lambda: int(_env("ACCESSGUARD_LLM_SAMPLES", "3")))
+    # Runtime verifier (PLAN.md §6.14). The API seals credentials with the verifier's public key;
+    # only the verifier worker process holds ACCESSGUARD_VERIFIER_PRIVATE_KEY.
+    verifier_public_key: str = field(
+        default_factory=lambda: _env("ACCESSGUARD_VERIFIER_PUBLIC_KEY")
+    )
+    verifier_budget: int = field(
+        default_factory=lambda: int(_env("ACCESSGUARD_VERIFIER_BUDGET", "30"))
+    )
 
     def validate_github(self) -> None:
         for name in ("app_id", "client_id", "client_secret", "webhook_secret", "private_key"):

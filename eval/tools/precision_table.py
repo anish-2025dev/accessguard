@@ -6,7 +6,10 @@ inline (deterministic) findings how many a reviewer would act on. Replays cover 
 where most access changes are intentional, so "actionable" is a pessimistic proxy for the
 product metric (effective FP = no positive action taken), which the pilot measures directly.
 
-    python eval/tools/precision_table.py [--markdown]
+    python eval/tools/precision_table.py [--markdown] [--pilot]
+
+``--pilot`` reports the Phase 4 pilot repositories (replays named ``pilot-*``) instead of the
+corpus.
 """
 
 from __future__ import annotations
@@ -21,11 +24,13 @@ import yaml
 EVAL = Path(__file__).resolve().parents[1]
 
 
-def table() -> tuple[dict[str, dict[str, int]], dict[str, int]]:
+def table(pilot: bool = False) -> tuple[dict[str, dict[str, int]], dict[str, int]]:
     rules: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
     repos: dict[str, int] = {}
     for report in sorted((EVAL / "reports").glob("replay-*.json")):
         name = report.stem.removeprefix("replay-")
+        if name.startswith("pilot-") != pilot:
+            continue
         data = json.loads(report.read_text())
         labels_file = EVAL / "corpus" / "labels" / f"{name}.yaml"
         labels = (yaml.safe_load(labels_file.read_text()) if labels_file.exists() else None) or {}
@@ -48,8 +53,9 @@ def table() -> tuple[dict[str, dict[str, int]], dict[str, int]]:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--markdown", action="store_true")
+    ap.add_argument("--pilot", action="store_true")
     args = ap.parse_args()
-    rules, repos = table()
+    rules, repos = table(args.pilot)
     print(f"{len(repos)} repositories, {sum(repos.values())} commits replayed\n")
     head = "| Rule | Findings | TP | FP | Unlabelled | Precision | Inline | Inline FP |"
     print(head if args.markdown else head.replace("|", " "))

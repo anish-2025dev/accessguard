@@ -1,0 +1,13 @@
+# Pilot hand labels (Phase 4). label=factual TP/FP; actionable=would a reviewer act.
+33b8cee61924bbe95451aa5f58b3275a8d4121ec00a7be872bf3094088591cb6:
+  actionable: false
+  label: tp
+  note: 'orders: public insert ordering flow, not readable back'
+75f82cf78703bff09e9ab9a1ac77388c7579d59d99e910cd9e55f7b0acc9c1fe:
+  actionable: false
+  label: tp
+  note: 'order_items: public insert ordering flow, not readable back'
+d2497ef408c4bb9a2ab4c7828b553d3e846151f8775fb9e32855dd420838630e:
+  actionable: false
+  label: tp
+  note: 'reservations: public insert reservation form, not readable back'

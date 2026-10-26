@@ -26,6 +26,7 @@ from __future__ import annotations
 import posixpath
 import re
 import tomllib
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 from pglast import ast as pg
@@ -57,7 +58,9 @@ class Table:
     schema: str
     name: str
     loc: Loc
-    rls: bool = False
+    # False after CREATE TABLE; None (unknown) for a table no migration created, e.g. one made
+    # in the dashboard before the migrations start. Unknown is never reported as disabled.
+    rls: bool | None = False
     policies: dict[str, Policy] = field(default_factory=dict)
     # role -> privileges explicitly granted (beyond Supabase's defaults) / revoked
     granted: dict[str, set[str]] = field(default_factory=dict)
@@ -138,7 +141,7 @@ class _Replay:
     def table(self, key: tuple[str, str], loc: Loc) -> Table:
         t = self.cat.tables.get(key)
         if t is None:  # ALTER of a table created outside the migrations (e.g. auth.users)
-            t = Table(key[0], key[1], loc)
+            t = Table(key[0], key[1], loc, rls=None)
             self.cat.tables[key] = t
         return t
 
@@ -229,10 +232,12 @@ class _Replay:
             schemas = {s.sval for s in stmt.objects or () if isinstance(s, pg.String)}
             tables = [t for t in self.cat.tables.values() if t.schema in schemas]
         else:
+            # A grant on a view, or on a relation no migration created, says nothing about RLS:
+            # it must not invent a table (pilot false positive: GRANT SELECT ON a view).
             tables = [
-                self.table(_name(o), Loc(path="", line=0))
+                self.cat.tables[_name(o)]
                 for o in stmt.objects or ()
-                if isinstance(o, pg.RangeVar)
+                if isinstance(o, pg.RangeVar) and _name(o) in self.cat.tables
             ]
         for t in tables:
             for role in roles:
@@ -322,12 +327,131 @@ COALESCE_BOTH = re.compile(r"coalesce\s*\(.*\)\s*(=|<>|!=)\s*coalesce\s*\(", re.
 
 
 def fails_open(expr: str | None) -> bool:
+    """Can the policy pass because the principal is NULL (anonymous caller or orphan row)?
+
+    ``owner = auth.uid() OR owner IS NULL`` and ``auth.uid() IS NULL OR ...`` do; a NULL test in
+    an OR branch that also requires ``col = auth.uid()`` does not, because that comparison is
+    NULL for an anonymous caller and the branch can never be TRUE. The expression is parsed with
+    pglast and expanded into OR branches (pglast 8.7 ``BoolExpr``/``NullTest``/``A_Expr``)."""
     if not expr:
         return False
     if COALESCE_BOTH.search(expr) and AUTH_FN.search(expr):
         return True
-    # `owner = auth.uid() OR owner IS NULL` / `auth.uid() IS NULL OR ...`
-    return bool(re.search(r"\bOR\b", expr, re.I) and NULL_OR.search(expr) and AUTH_FN.search(expr))
+    if not (re.search(r"\bOR\b", expr, re.I) and NULL_OR.search(expr) and AUTH_FN.search(expr)):
+        return False
+    try:
+        node = parse_sql(f"select {expr}")[0].stmt.targetList[0].val  # type: ignore[union-attr]
+    except Exception:
+        return True
+    branches = _branches(node)
+    if branches is None:
+        return True
+    auth_cols = _auth_columns(node)
+    for conj in branches:
+        null_test = any(
+            isinstance(a, pg.NullTest)
+            and a.nulltesttype == enums.NullTestType.IS_NULL
+            and (_mentions_auth(a.arg) or _column(a.arg) in auth_cols)
+            for a in conj
+        )
+        if null_test and not any(_requires_principal(a) for a in conj):
+            return True
+    return False
+
+
+def _deparse(node: object) -> str:
+    try:
+        return str(RawStream()(node)) if isinstance(node, pg.Node) else ""
+    except Exception:
+        return ""
+
+
+def _mentions_auth(node: object) -> bool:
+    return bool(AUTH_FN.search(_deparse(node)))
+
+
+def _column(node: object) -> str | None:
+    if isinstance(node, pg.ColumnRef) and node.fields:
+        last = node.fields[-1]
+        return getattr(last, "sval", None)
+    return None
+
+
+def _branches(node: object, limit: int = 64) -> list[list[object]] | None:
+    """OR branches (each a list of AND-ed atoms); None when the expansion is too large."""
+    if isinstance(node, pg.BoolExpr) and node.boolop == enums.BoolExprType.OR_EXPR:
+        out: list[list[object]] = []
+        for a in node.args or ():
+            sub = _branches(a, limit)
+            if sub is None:
+                return None
+            out += sub
+        return out if len(out) <= limit else None
+    if isinstance(node, pg.BoolExpr) and node.boolop == enums.BoolExprType.AND_EXPR:
+        acc: list[list[object]] = [[]]
+        for a in node.args or ():
+            sub = _branches(a, limit)
+            if sub is None or len(acc) * len(sub) > limit:
+                return None
+            acc = [x + y for x in acc for y in sub]
+        return acc
+    return [[node]]
+
+
+def _auth_columns(node: object) -> set[str]:
+    """Columns compared with an auth function anywhere in the expression."""
+    out: set[str] = set()
+
+    def walk(n: object) -> None:
+        if isinstance(n, pg.A_Expr):
+            sides = (n.lexpr, n.rexpr)
+            if any(_mentions_auth(x) for x in sides):
+                out.update(c for c in map(_column, sides) if c)
+        if isinstance(n, pg.Node):
+            for name in n:  # pglast Node iterates its attribute names
+                v = getattr(n, name)
+                for c in v if isinstance(v, tuple) else (v,):
+                    walk(c)
+
+    walk(node)
+    return out
+
+
+def _requires_principal(atom: object) -> bool:
+    """An AND-ed atom that is never TRUE when the auth function returns NULL."""
+    if isinstance(atom, pg.NullTest):
+        return atom.nulltesttype == enums.NullTestType.IS_NOT_NULL and _mentions_auth(atom.arg)
+    if isinstance(atom, pg.A_Expr) and atom.kind == enums.A_Expr_Kind.AEXPR_OP:
+        op = atom.name[-1].sval if atom.name else ""
+        sides = (atom.lexpr, atom.rexpr)
+        return op in {"=", "<>", "!=", "<", ">", "<=", ">="} and any(
+            _mentions_auth(x) and "coalesce" not in _deparse(x).lower() for x in sides
+        )
+    return False
+
+
+def readable_by(role: str, policies: Iterable[tuple[str, list[str], bool, str | None]]) -> bool:
+    """Some permissive SELECT/ALL policy lets ``role`` read every row (``using (true)``).
+
+    ``policies`` are ``(cmd, roles, permissive, using)``; ``public`` covers every role."""
+    return any(
+        cmd in {"select", "all"}
+        and permissive
+        and (role in roles or "public" in roles)
+        and is_true(using)
+        for cmd, roles, permissive, using in policies
+    )
+
+
+def write_reason(cmd: str, role: str, readable: bool) -> str:
+    """``write_only_insert`` for an insert-anything policy on rows ``role`` cannot read back (a
+    contact form or order drop box: spam, not a data leak); ``policy_true_write`` otherwise."""
+    return "write_only_insert" if cmd == "insert" and not readable else "policy_true_write"
+
+
+def _write_reason(cmd: str, role: str, policies: Iterable[Policy]) -> str:
+    rows = [(p.cmd, p.roles, p.permissive, p.using) for p in policies]
+    return write_reason(cmd, role, readable_by(role, rows))
 
 
 def is_true(expr: str | None) -> bool:
@@ -339,7 +463,7 @@ def exposures(cat: Catalog, exposed: tuple[str, ...]) -> list[DataExposure]:
     for t in cat.tables.values():
         if t.schema not in exposed:
             continue
-        if not t.rls:
+        if t.rls is False:
             for role in API_ROLES:
                 privs = (set(ALL_PRIVS) | t.granted.get(role, set())) - t.revoked.get(role, set())
                 if privs:
@@ -373,7 +497,7 @@ def exposures(cat: Catalog, exposed: tuple[str, ...]) -> list[DataExposure]:
                                 resource=t.key,
                                 role=role,
                                 ops=set(ops),
-                                reason="policy_true_write",
+                                reason=_write_reason(p.cmd, role, t.policies.values()),
                                 loc=p.loc,
                                 detail=f'policy "{p.name}" allows every row',
                             )

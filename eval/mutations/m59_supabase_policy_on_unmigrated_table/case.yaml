@@ -1,0 +1,5 @@
+id: m59_supabase_policy_on_unmigrated_table
+kind: negative
+framework: data
+description: "A policy is added to a table that was created before the migrations start (dashboard); its RLS state is unknown, so nothing is reported as rls_disabled (pilot false-positive shape)."
+expected: []
