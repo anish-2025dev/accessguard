@@ -87,6 +87,38 @@ def test_new_login_route_is_unauthenticated_by_design(tmp_path: Path) -> None:
     )
 
 
+@pytest.mark.parametrize("path", ["/auth/settings", "/public/items/{id}", "/token/revoke"])
+def test_auth_flow_parent_does_not_hide_guard_removal(tmp_path: Path, path: str) -> None:
+    base = MAIN.replace('"/items"', repr(path))
+    head = base.replace("user=Depends(get_current_user)", "")
+    assert _diff(
+        tmp_path, {"deps.py": DEPS, "main.py": base}, {"deps.py": DEPS, "main.py": head}
+    ) == [("AG-AUTH-002", f"GET {path}")]
+
+
+@pytest.mark.parametrize(
+    ("path", "handler", "method", "reported"),
+    [
+        ("/auth/settings", "settings", "post", True),
+        ("/public/items/{id}", "items", "post", True),
+        ("/auth/login", "login", "post", False),
+        ("/oauth/callback/{provider}", "finish", "post", False),
+        ("/admin/token", "issue", "post", True),
+        ("/admin/login", "login", "post", True),
+        ("/admin/users", "register_user", "post", True),
+        ("/admin/health", "health", "get", True),
+    ],
+)
+def test_new_auth_flow_exemptions_are_scoped(
+    tmp_path: Path, path: str, handler: str, method: str, reported: bool
+) -> None:
+    base = "from fastapi import FastAPI\napp = FastAPI()\n"
+    head = base + f"@app.{method}({path!r})\ndef {handler}(): ...\n"
+    assert _diff(tmp_path, {"main.py": base}, {"main.py": head}) == (
+        [("AG-AUTH-001", f"{method.upper()} {path}")] if reported else []
+    )
+
+
 def test_replacing_guard_with_equivalent_guard_is_not_a_removal(tmp_path: Path) -> None:
     deps2 = DEPS + "\ndef get_active_user(user=Depends(get_current_user)):\n    return user\n"
     head_main = MAIN.replace("user=Depends(get_current_user)", "user=Depends(get_active_user)")
@@ -261,3 +293,41 @@ def test_inline_ignore_requires_explicit_valid_rule(
     head = MAIN + f'# {marker}\n@app.post("/orders")\ndef orders(): ...\n'
     found = _diff(tmp_path, {"deps.py": DEPS, "main.py": MAIN}, {"deps.py": DEPS, "main.py": head})
     assert found == ([] if suppressed else [("AG-AUTH-001", "POST /orders")])
+
+
+@pytest.mark.parametrize(
+    ("method", "path", "handler", "reported"),
+    [
+        ("POST", "/auth/delete-account", "remove", True),
+        ("POST", "/public/items", "create", True),
+        ("POST", "/token/{id}/delete", "remove", True),
+        ("POST", "/items/{token}", "create", True),
+        ("POST", "/admin/login", "login", True),
+        ("POST", "/admin/users", "create", True),
+        ("GET", "/admin/health", "health", True),
+        ("POST", "/auth/login", "issue", False),
+        ("POST", "/tokens/refresh/", "issue", False),
+        ("POST", "/auth/callback/{provider}", "handle", False),
+        ("POST", "/{tenant}/webhooks/{hook}", "handle", False),
+        ("POST", "/users", "create", False),
+    ],
+)
+def test_new_endpoint_auth_flow_boundaries(
+    tmp_path: Path, method: str, path: str, handler: str, reported: bool
+) -> None:
+    base = "from fastapi import FastAPI\napp = FastAPI()\n"
+    head = base + f'@app.{method.lower()}("{path}")\ndef {handler}(): ...\n'
+    found = _diff(tmp_path, {"main.py": base}, {"main.py": head})
+    assert found == ([("AG-AUTH-001", f"{method} {path.rstrip('/')}")] if reported else [])
+
+
+@pytest.mark.parametrize("path", ["/auth/items", "/public/items", "/health", "/token/{id}"])
+def test_auth_flow_path_does_not_hide_guard_removal(tmp_path: Path, path: str) -> None:
+    base = (
+        "from fastapi import FastAPI, Depends\nfrom deps import get_current_user\n"
+        f'app = FastAPI()\n@app.post("{path}")\ndef manage(user=Depends(get_current_user)): ...\n'
+    )
+    head = base.replace("user=Depends(get_current_user)", "")
+    assert _diff(
+        tmp_path, {"deps.py": DEPS, "main.py": base}, {"deps.py": DEPS, "main.py": head}
+    ) == [("AG-AUTH-002", f"POST {path}")]
