@@ -1,0 +1,11 @@
+id: m63_owner_gated_by_admin_flag
+kind: positive
+framework: fastapi
+description: "A new mutating admin endpoint whose only guard compares the principal to a per-object
+  owner (`account.id != doc.owner_id`), gated by a `settings.admin_mode` flag. The settings-admin
+  reference must NOT make this a role check: it is still per-object ownership, so AG-ROLE-001's
+  admin-path fallback fires (regression guard for ADR 018's owner-exclusion fix)."
+expected:
+  - rule_id: AG-ROLE-001
+    key: "POST /admin/api/v1/documents/{doc_id}"
+    tier: heuristic

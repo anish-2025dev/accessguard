@@ -21,12 +21,20 @@ A guard whose rejection condition compares the principal against an admin/super-
 application **settings or config** is a privilege (role) check, not per-object ownership. In
 `classify`, before the ownership-shape branch, a new `_ADMIN_SETTING` pattern
 (`(settings|config|conf|cfg|app_settings).<…>(super_?user|admin|staff|root)`) routes such a guard
-to `GuardKind.AUTHZ_ROLE`.
+to `GuardKind.AUTHZ_ROLE` — **but only when the predicate holds no ownership reference**
+(`_OWNER_ATOM` does not match). A guard like `settings.admin_mode and account.id !=
+resource.owner_id` names a settings-admin flag yet is still a per-object owner check (merely gated
+by a flag); it must fall through to the ownership branch, or AG-ROLE-001's admin-path fallback
+(`consistency.py`, which requires `not mine`) would be suppressed for a role-less admin endpoint —
+a false negative. The intended cases (`account.id == settings.super_user`,
+`account.id in settings.admin_users`) carry no `_OWNER_ATOM`, so they still match.
 
-This is deliberately narrow: it keys on a comparison against a settings/config admin reference,
-which a genuine owner check (`resource.owner_id == current_user.id`, comparing a resource to the
-request principal) never has. Negative fixture `m62_admin_settings_role_guard`; `make eval` stays
-62/62 and the full suite 166 passing.
+This is deliberately narrow: it keys on a comparison against a settings/config admin reference with
+no ownership term, which a genuine owner check (`resource.owner_id == current_user.id`, comparing a
+resource to the request principal) never has. Negative fixture `m62_admin_settings_role_guard`
+(settings-admin guard → no finding); positive fixture `m63_owner_gated_by_admin_flag` (owner check
+gated by `settings.admin_mode` on a role-less admin endpoint → AG-ROLE-001 fires). `make eval`
+stays 63/63 at 100% precision/recall; the full suite is 126 passing.
 
 ## Consequences
 - Four of the five lnbits false positives disappear (`check_admin` / `check_super_user` guards:
