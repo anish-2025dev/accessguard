@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -59,8 +60,35 @@ def diff_trees(
             if f.fingerprint not in seen:
                 seen.add(f.fingerprint)
                 findings.append(f)
+    findings = [f for f in findings if not suppressed_inline(head, f)]
     findings.sort(key=lambda f: (SEVERITY_ORDER[f.severity], f.rule_id, f.endpoint_id or ""))
     return DiffResult(findings, b.facts, h.facts, cfg, cfg.errors + head_cfg.errors)
+
+
+IGNORE_MARK = re.compile(r"accessguard-ignore(?:\[([^\]\r\n]*)\]|(?!\[))")
+
+
+def suppressed_inline(tree: SourceTree, f: Finding) -> bool:
+    """``# accessguard-ignore`` or ``# accessguard-ignore[AG-AUTH-001]`` on the finding's line or
+    the line above it (FB: inline suppression, kept in the code under review)."""
+    if not f.loc.path or f.loc.line < 1 or not tree.exists(f.loc.path):
+        return False
+    lines = tree.read(f.loc.path).decode("utf-8", "replace").splitlines()
+    ln = f.loc.line - 1  # the finding's own line, then upward through decorators/comments
+    while 0 <= ln < len(lines) and ln >= f.loc.line - 12:
+        text = lines[ln].strip()
+        if m := IGNORE_MARK.search(text):
+            rules = m.group(1)
+            return rules is None or f.rule_id in {
+                r.strip().upper()
+                for r in rules.split(",")
+                if re.fullmatch(r"AG-[A-Z]+-\d{3}", r.strip().upper())
+            }
+        in_block = text.startswith(("@", "#", ")", "]")) or text.endswith((",", "(", "["))
+        if ln < f.loc.line - 1 and text and not in_block:
+            return False  # left the decorator block
+        ln -= 1
+    return False
 
 
 def diff_paths(base: Path | str, head: Path | str) -> list[dict[str, Any]]:

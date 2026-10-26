@@ -207,6 +207,21 @@ def test_rewritten_guard_with_disjoint_predicates_is_not_weakened() -> None:
     )
 
 
+def test_inline_accessguard_ignore(tmp_path: Path) -> None:
+    head_main = (
+        MAIN
+        + '# accessguard-ignore[AG-AUTH-001] public by design\n@app.post("/orders")\ndef orders(): ...\n'
+    )
+    assert (
+        _diff(tmp_path, {"deps.py": DEPS, "main.py": MAIN}, {"deps.py": DEPS, "main.py": head_main})
+        == []
+    )
+    other = MAIN + '# accessguard-ignore[AG-AUTH-002]\n@app.post("/orders")\ndef orders(): ...\n'
+    assert _diff(
+        tmp_path / "2", {"deps.py": DEPS, "main.py": MAIN}, {"deps.py": DEPS, "main.py": other}
+    ) == [("AG-AUTH-001", "POST /orders")]
+
+
 def test_adding_owner_check_to_role_checked_handler_is_not_a_removal(tmp_path: Path) -> None:
     base = """
 from fastapi import FastAPI, HTTPException, Depends
@@ -256,6 +271,28 @@ def test_neutered_authn_is_not_reported_where_a_role_check_still_rejects(tmp_pat
     assert _diff(
         tmp_path, {"deps.py": NEUTER_DEPS, "main.py": MAIN}, {"deps.py": head, "main.py": MAIN}
     ) == [("AG-AUTH-002", "GET /items")]
+
+
+@pytest.mark.parametrize(
+    ("marker", "suppressed"),
+    [
+        ("accessguard-ignore", True),
+        ("accessguard-ignore[ag-auth-001]", True),
+        ("accessguard-ignore[garbage, AG-AUTH-001]", True),
+        ("accessguard-ignore[AG-AUTH-002]", False),
+        ("accessguard-ignore[]", False),
+        ("accessguard-ignore[garbage!]", False),
+        ("accessguard-ignore[ag-auth-002]", False),
+        ("accessguard-ignore[AG-AUTH-001! AG-AUTH-002]", False),
+        ("accessguard-ignore[AG-AUTH-001", False),
+    ],
+)
+def test_inline_ignore_requires_explicit_valid_rule(
+    tmp_path: Path, marker: str, suppressed: bool
+) -> None:
+    head = MAIN + f'# {marker}\n@app.post("/orders")\ndef orders(): ...\n'
+    found = _diff(tmp_path, {"deps.py": DEPS, "main.py": MAIN}, {"deps.py": DEPS, "main.py": head})
+    assert found == ([] if suppressed else [("AG-AUTH-001", "POST /orders")])
 
 
 @pytest.mark.parametrize(

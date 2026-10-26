@@ -2,7 +2,7 @@
   "name": "accessguard-dev",
   "url": "https://github.com/anish-2025dev/accessguard",
   "description": "Reports access-control regressions in pull requests: who can access what, and did this change make it worse?",
-  "request_oauth_on_install": true,
+  "request_oauth_on_install": false,
   "default_permissions": {
     "contents": "read",
     "pull_requests": "write",
@@ -23,5 +23,6 @@
   "redirect_url": "http://localhost:8000/manifest/redirect",
   "callback_urls": [
     "http://localhost:8000/callback"
-  ]
+  ],
+  "setup_url": "http://localhost:8000/connect"
 }
