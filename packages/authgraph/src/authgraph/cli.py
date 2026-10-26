@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from collections import Counter
 from pathlib import Path
@@ -22,13 +23,29 @@ from authgraph.output.sarif import to_sarif
 from authgraph.workspace.tree import GitTree, SourceTree, open_tree
 
 
+def _open(spec: str | Path) -> SourceTree:
+    """Resolve a directory or git revision, turning a bad path/rev into a clean CLI error."""
+    try:
+        return open_tree(spec)
+    except subprocess.CalledProcessError as e:
+        raise SystemExit(
+            f"error: cannot read '{spec}': not a directory, and not a git revision in the "
+            f"current repository (git exited {e.returncode})"
+        ) from e
+
+
 def _trees(base: str, head: str | None, repo: Path) -> tuple[SourceTree, SourceTree]:
     if head is None:
         if ".." not in base:
             raise SystemExit("diff needs BASE HEAD, or a git range BASE..HEAD")
         b, h = base.split("..", 1)
-        return GitTree(repo, b), GitTree(repo, h or "HEAD")
-    return open_tree(base), open_tree(head)
+        try:
+            return GitTree(repo, b), GitTree(repo, h or "HEAD")
+        except subprocess.CalledProcessError as e:
+            raise SystemExit(
+                f"error: cannot resolve git range '{base}' in '{repo}' (git exited {e.returncode})"
+            ) from e
+    return _open(base), _open(head)
 
 
 def _text(findings: list[Finding]) -> str:
@@ -75,7 +92,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "scan":
-        a = scan(open_tree(args.path))
+        a = scan(_open(args.path))
         if args.format == "json":
             sys.stdout.write(a.facts.model_dump_json(indent=2) + "\n")
         else:
