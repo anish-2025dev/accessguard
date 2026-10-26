@@ -19,11 +19,13 @@ head, and link GitHub users to installations without trusting a client-supplied
    already reached us.
 2. **Payloads are triggers.** The router re-fetches the live PR (head SHA, draft, state) and
    re-lists installation repositories; it never trusts payload contents or ordering.
-3. **Work keys and generations.** Jobs are keyed (`scan:{repo}:{pr}:{head}`, `push:{repo}:{after}`,
+3. **Work keys and generations.** Jobs are keyed (`scan:{repo}:{pr}:{head}:g{generation}`, `push:{repo}:{after}`,
    `baseline:{repo}:{ref}`) so ARQ drops duplicates. Each scheduling bumps
    `pr:{repo}:{n}:gen`; `scan_pr` re-checks it after fetching, after analysis and before
    reporting, and cancels its check run (`cancelled`) when superseded. A scan row is unique per
-   (repo, head, trigger, config hash) and a finished identical scan is reused.
+   (repo, PR, base SHA, head, trigger, config hash), with nulls treated as equal, and a finished
+   identical scan is reused. Including the PR and base SHA extends the original §6.7 identity:
+   different PRs or changed bases must be analyzed and reported independently.
 4. **Reporter upserts by fingerprint.** Findings are stored per (repo, PR, fingerprint) with the
    review-comment id; a re-scan edits the existing comment, and a fingerprint missing from the
    new head marks the finding resolved and rewrites its comment ("✅ Resolved in …"). Inline

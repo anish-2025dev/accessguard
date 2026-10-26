@@ -239,3 +239,25 @@ def test_neutered_authn_is_not_reported_where_a_role_check_still_rejects(tmp_pat
     assert _diff(
         tmp_path, {"deps.py": NEUTER_DEPS, "main.py": MAIN}, {"deps.py": head, "main.py": MAIN}
     ) == [("AG-AUTH-002", "GET /items")]
+
+
+@pytest.mark.parametrize(
+    ("marker", "suppressed"),
+    [
+        ("accessguard-ignore", True),
+        ("accessguard-ignore[ag-auth-001]", True),
+        ("accessguard-ignore[garbage, AG-AUTH-001]", True),
+        ("accessguard-ignore[AG-AUTH-002]", False),
+        ("accessguard-ignore[]", False),
+        ("accessguard-ignore[garbage!]", False),
+        ("accessguard-ignore[ag-auth-002]", False),
+        ("accessguard-ignore[AG-AUTH-001! AG-AUTH-002]", False),
+        ("accessguard-ignore[AG-AUTH-001", False),
+    ],
+)
+def test_inline_ignore_requires_explicit_valid_rule(
+    tmp_path: Path, marker: str, suppressed: bool
+) -> None:
+    head = MAIN + f'# {marker}\n@app.post("/orders")\ndef orders(): ...\n'
+    found = _diff(tmp_path, {"deps.py": DEPS, "main.py": MAIN}, {"deps.py": DEPS, "main.py": head})
+    assert found == ([] if suppressed else [("AG-AUTH-001", "POST /orders")])

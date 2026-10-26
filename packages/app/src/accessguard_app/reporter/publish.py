@@ -15,7 +15,7 @@ from authgraph.facts.models import Finding
 from accessguard_app import metrics
 from accessguard_app.db.models import FindingRow
 from accessguard_app.domain import store
-from accessguard_app.github.port import GitHubPort
+from accessguard_app.github.port import CommentOutsideDiff, GitHubPort
 from accessguard_app.reporter import render
 from accessguard_app.runtime import Services
 
@@ -73,7 +73,9 @@ async def publish_pr(
     ]
     async with svc.sessions() as db:
         existing = await store.open_findings(db, repo_id, pr)
+        dismissed = await store.dismissed_fingerprints(db, repo_id, pr)
         intro = not await store.repo_has_reported(db, repo_id)
+    shown = [f for f in shown if f.fingerprint not in dismissed]
     posted = updated = summary_only = 0
     current = {f.fingerprint for f in shown}
     for f in shown:
@@ -100,7 +102,7 @@ async def publish_pr(
                     )
                     posted += 1
                     metrics.FINDINGS.labels(rule_id=f.rule_id, tier=f.tier).inc()
-                except Exception:  # line not in the diff (422): summary only
+                except CommentOutsideDiff:
                     log.info(
                         "inline comment rejected; summary only",
                         extra={"fingerprint": f.fingerprint},

@@ -110,7 +110,15 @@ class PRState(Base):
 class Scan(Base):
     __tablename__ = "scans"
     __table_args__ = (
-        UniqueConstraint("repo_id", "head_sha", "trigger", "config_hash"),
+        UniqueConstraint(
+            "repo_id",
+            "pr_number",
+            "base_sha",
+            "head_sha",
+            "trigger",
+            "config_hash",
+            postgresql_nulls_not_distinct=True,
+        ),
         Index(
             "one_active_scan_per_pr",
             "repo_id",

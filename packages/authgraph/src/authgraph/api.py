@@ -65,7 +65,7 @@ def diff_trees(
     return DiffResult(findings, b.facts, h.facts, cfg, cfg.errors + head_cfg.errors)
 
 
-IGNORE_MARK = re.compile(r"accessguard-ignore(?:\[([A-Z0-9,\- ]+)\])?")
+IGNORE_MARK = re.compile(r"accessguard-ignore(?:\[([^\]\r\n]*)\]|(?!\[))")
 
 
 def suppressed_inline(tree: SourceTree, f: Finding) -> bool:
@@ -79,7 +79,11 @@ def suppressed_inline(tree: SourceTree, f: Finding) -> bool:
         text = lines[ln].strip()
         if m := IGNORE_MARK.search(text):
             rules = m.group(1)
-            return rules is None or f.rule_id in {r.strip() for r in rules.split(",")}
+            return rules is None or f.rule_id in {
+                r.strip().upper()
+                for r in rules.split(",")
+                if re.fullmatch(r"AG-[A-Z]+-\d{3}", r.strip().upper())
+            }
         in_block = text.startswith(("@", "#", ")", "]")) or text.endswith((",", "(", "["))
         if ln < f.loc.line - 1 and text and not in_block:
             return False  # left the decorator block

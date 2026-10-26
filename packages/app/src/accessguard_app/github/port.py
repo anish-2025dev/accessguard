@@ -22,6 +22,10 @@ class InstallationGone(Exception):
     """Token mint returned 401/404: the installation or repo is no longer accessible."""
 
 
+class CommentOutsideDiff(Exception):
+    """GitHub rejected an inline comment with 422 because its line is outside the diff."""
+
+
 class GitHubPort(Protocol):
     # --- app-level (JWT) ---------------------------------------------------------------------
     async def list_app_installations(self) -> list[Json]: ...

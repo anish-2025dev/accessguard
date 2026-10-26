@@ -196,7 +196,15 @@ def upgrade() -> None:
             ["repositories.repo_id"],
         ),
         sa.PrimaryKeyConstraint("scan_id"),
-        sa.UniqueConstraint("repo_id", "head_sha", "trigger", "config_hash"),
+        sa.UniqueConstraint(
+            "repo_id",
+            "pr_number",
+            "base_sha",
+            "head_sha",
+            "trigger",
+            "config_hash",
+            postgresql_nulls_not_distinct=True,
+        ),
     )
     op.create_index(
         "one_active_scan_per_pr",

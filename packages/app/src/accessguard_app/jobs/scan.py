@@ -26,7 +26,7 @@ from accessguard_app.db.models import FindingRow
 from accessguard_app.domain import stack, store
 from accessguard_app.fetch import checkout
 from accessguard_app.github.port import InstallationGone, RateLimited
-from accessguard_app.reporter.publish import publish_pr
+from accessguard_app.reporter.publish import fails_check, publish_pr
 from accessguard_app.reporter.render import ICON
 from accessguard_app.runtime import RedisSummaryCache, Services, current_generation, take_token
 
@@ -201,11 +201,29 @@ async def scan_pr(ctx: dict[str, Any], repo_id: int, pr: int, head_sha: str, gen
         async with svc.sessions() as db:
             await store.set_repo_fields(db, repo_id, status="paused")
             await store.finish_scan(db, scan_id, "failed", check_run_id=check_id)
+        try:
+            await svc.github.update_check_run(
+                ref.installation_id,
+                ref.full_name,
+                check_id,
+                {"status": "completed", "conclusion": "failure"},
+            )
+        except Exception:
+            log.exception("could not complete check after installation became inaccessible")
         return "failed: installation no longer accessible"
     except RateLimited:
         metrics.RATE_LIMITED.inc()
         async with svc.sessions() as db:
             await store.finish_scan(db, scan_id, "failed", check_run_id=check_id)
+        try:
+            await svc.github.update_check_run(
+                ref.installation_id,
+                ref.full_name,
+                check_id,
+                {"status": "completed", "conclusion": "neutral"},
+            )
+        except Exception:
+            log.exception("could not complete check after rate limit")
         raise  # the worker retries with the server's retry-after (jobs.worker)
     except Exception:
         log.exception(
@@ -298,11 +316,7 @@ async def scan_push(ctx: dict[str, Any], repo_id: int, before: str, after: str) 
                     last_seen_sha=after,
                 ),
             )
-    failing = [
-        f
-        for f in result.findings
-        if f.tier == "deterministic" and f.severity in ("critical", "high")
-    ]
+    failing = [f for f in result.findings if fails_check(f, cfg.fail_on)]
     check_id = await svc.github.create_check_run(
         ref.installation_id,
         ref.full_name,
@@ -310,7 +324,7 @@ async def scan_push(ctx: dict[str, Any], repo_id: int, before: str, after: str) 
             "name": svc.settings.check_name,
             "head_sha": after,
             "status": "completed",
-            "conclusion": "failure" if failing and cfg.fail_on != "never" else "success",
+            "conclusion": "failure" if failing else "success",
             "output": {
                 "title": f"{len(result.findings)} finding(s) in this push",
                 "summary": f"Compared `{before[:7]}...{after[:7]}`.",

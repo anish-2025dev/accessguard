@@ -109,14 +109,13 @@ async def schedule_pr_scan(svc: Services, repo_id: int, number: int, *, force: b
     gen = await bump_generation(svc.redis, repo_id, number, head)
     async with svc.sessions() as db:
         await store.upsert_pr_state(db, repo_id, number, head, gen, draft, "open")
-    suffix = f":g{gen}" if force else ""
     await svc.queue.enqueue(
         "scan_pr",
         repo_id,
         number,
         head,
         gen,
-        job_id=f"scan:{repo_id}:{number}:{head}{suffix}",
+        job_id=f"scan:{repo_id}:{number}:{head}:g{gen}",
         defer_by=svc.settings.scan_debounce_seconds,
     )
     return f"scan scheduled g{gen}"
@@ -159,10 +158,7 @@ async def on_issue_comment(svc: Services, action: str, p: dict[str, Any]) -> str
         return "no command"
     repo_id = int(p["repository"]["id"])
     number = int(p["issue"]["number"])
-    if not (
-        await take_token(svc.redis, f"cmd:pr:{repo_id}:{number}", 5, 60)
-        and await take_token(svc.redis, f"cmd:user:{sender['id']}", 30, 3600)
-    ):
+    if not await take_token(svc.redis, f"cmd:user:{sender['id']}", 30, 3600):
         return "rate limited"
     async with svc.sessions() as db:
         repo = await store.get_repo(db, repo_id)
@@ -173,6 +169,8 @@ async def on_issue_comment(svc: Services, action: str, p: dict[str, Any]) -> str
     )
     if perm not in WRITE_PERMISSIONS:
         return "commenter lacks write permission"
+    if not await take_token(svc.redis, f"cmd:pr:{repo_id}:{number}", 5, 60):
+        return "rate limited"
     verb, rest = m.group(1).lower(), m.group(2).strip()
     if verb == "scan":
         return await schedule_pr_scan(svc, repo_id, number, force=True)
