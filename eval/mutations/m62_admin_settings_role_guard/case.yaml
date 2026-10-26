@@ -1,0 +1,5 @@
+id: m62_admin_settings_role_guard
+kind: negative
+framework: fastapi
+description: "A new super-user-gated admin endpoint whose guard compares the principal to settings.super_user / settings.admin_users is role-checked, so AG-ROLE-001's admin-path fallback must not fire (pilot false positive: lnbits check_admin/check_super_user)."
+expected: []
